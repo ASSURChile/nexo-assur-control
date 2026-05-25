@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ASSUR Chile - Maqueta plantillas de cotización</title>
+    <style>
+      :root {
+        --navy: #0b1421;
+        --navy-2: #101c2b;
+        --blue: #1b5f86;
+        --green: #1f8a55;
+        --amber: #b58112;
+        --red: #c9473c;
+        --ink: #172436;
+        --muted: #64748b;
+        --line: #dbe5ee;
+        --line-strong: #c8d7e6;
+        --canvas: #f4f7fa;
+        --panel: #ffffff;
+        --soft: #f8fafc;
+        --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--canvas); color: var(--ink); font: 14px/1.45 var(--font); }
+      button, input, textarea, select { font: inherit; }
+
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        min-height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 0 28px;
+        background: var(--navy);
+        color: white;
+        border-bottom: 1px solid #213348;
+      }
+
+      .brand { display: flex; align-items: center; gap: 12px; min-width: 230px; }
+      .mark { width: 34px; height: 34px; object-fit: contain; display: block; }
+      .brand strong { display: block; font-size: 18px; line-height: 1; letter-spacing: .24em; }
+      .brand span { display: block; margin-top: 3px; color: #83c9ee; font-size: 8px; font-weight: 850; letter-spacing: .48em; }
+      .top nav { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+      .top a { color: #d9e5f2; text-decoration: none; border: 1px solid #3d536b; border-radius: 999px; padding: 8px 11px; font-size: 11px; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+
+      .intro { max-width: 1260px; margin: 0 auto; padding: 30px 24px 18px; }
+      h1 { margin: 0 0 8px; font-size: 30px; line-height: 1.12; letter-spacing: 0; }
+      h2 { margin: 0; font-size: 21px; letter-spacing: 0; }
+      h3 { margin: 0; font-size: 16px; letter-spacing: 0; }
+      p { margin: 0; color: var(--muted); }
+      .intro p { max-width: 900px; font-size: 15px; }
+
+      .layout { max-width: 1260px; margin: 0 auto 60px; padding: 0 24px; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; }
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 40px rgba(23,36,54,.06); }
+      .side { padding: 18px; align-self: start; position: sticky; top: 90px; }
+      .side-title { font-size: 11px; color: var(--blue); font-weight: 900; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; }
+      .template-list { display: grid; gap: 8px; }
+      .template-item { padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); }
+      .template-item strong { display: block; font-size: 13px; line-height: 1.25; }
+      .template-item span { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+      .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; margin-top: 8px; }
+      .pill.green { color: var(--green); background: #e9f7f0; border: 1px solid #bfe7d0; }
+      .pill.blue { color: var(--blue); background: #e7f1f7; border: 1px solid #bdd7e7; }
+      .pill.amber { color: var(--amber); background: #fff6db; border: 1px solid #ecd689; }
+
+      .builder { padding: 20px; margin-bottom: 20px; }
+      .builder-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 18px; }
+      .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+      .btn { border: 0; border-radius: 8px; padding: 10px 13px; background: var(--blue); color: white; font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+      .btn.ghost { background: transparent; color: var(--blue); border: 1px solid #bdd7e7; }
+      .fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+      .field label { display: block; color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+      .field input, .field select { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: white; padding: 10px 11px; color: var(--ink); outline: none; }
+
+      .preview-grid { display: grid; gap: 22px; }
+      .sheet-wrap { overflow: auto; padding: 20px; }
+      .sheet {
+        width: 794px;
+        min-height: 1123px;
+        margin: 0 auto;
+        background: white;
+        color: #1f2937;
+        border: 1px solid #d9e2ec;
+        box-shadow: 0 20px 45px rgba(23,36,54,.12);
+        padding: 46px 54px 42px;
+        position: relative;
+      }
+
+      .quote-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 2px solid #e5edf5; }
+      .quote-logo { display: flex; align-items: center; gap: 11px; }
+      .quote-logo .mark { width: 36px; height: 36px; }
+      .quote-logo strong { display: block; font-size: 21px; letter-spacing: .22em; line-height: 1; color: var(--ink); }
+      .quote-logo span { display: block; margin-top: 4px; color: var(--blue); font-size: 8px; font-weight: 900; letter-spacing: .44em; }
+      .quote-meta { text-align: right; color: #475569; font-size: 11px; line-height: 1.55; }
+      .quote-meta b { color: var(--ink); }
+      .quote-date { margin: 28px 0 16px; color: #334155; }
+      .recipient { margin-bottom: 24px; }
+      .recipient strong { display: block; color: #111827; font-size: 15px; }
+      .lead { color: #334155; margin-bottom: 24px; text-align: justify; }
+      .section { margin: 24px 0; }
+      .section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; background: #eef5fa; border-left: 4px solid var(--blue); color: var(--blue); font-weight: 900; letter-spacing: .04em; text-transform: uppercase; font-size: 12px; margin-bottom: 12px; }
+      .quote-table { width: 100%; border-collapse: collapse; margin: 10px 0 12px; font-size: 12px; }
+      .quote-table th { background: #f1f5f9; color: #475569; text-align: left; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 9px; border: 1px solid #dce6ef; }
+      .quote-table td { padding: 9px; border: 1px solid #dce6ef; vertical-align: top; }
+      .quote-table .num { text-align: right; white-space: nowrap; }
+      .total-row td { background: #f8fafc; font-weight: 900; color: var(--ink); }
+      .notes { display: grid; gap: 8px; color: #334155; font-size: 12.5px; }
+      .notes li { margin-bottom: 5px; }
+      .option-break { margin: 24px 0; border: 0; border-top: 1px dashed #c8d7e6; }
+      .footer { position: absolute; left: 54px; right: 54px; bottom: 36px; display: flex; justify-content: space-between; gap: 20px; color: #64748b; font-size: 10px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+
+      .editable-map { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-top: 16px; }
+      .editable-card { border: 1px solid var(--line); background: var(--soft); border-radius: 9px; padding: 12px; }
+      .editable-card strong { display: block; font-size: 12px; color: var(--ink); }
+      .editable-card span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+      .editable {
+        border-radius: 5px;
+        outline: 1px dashed transparent;
+        outline-offset: 2px;
+      }
+      .editable:hover {
+        outline-color: #93c5fd;
+        background: rgba(30, 58, 138, .04);
+      }
+      .edit-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1e3a8a;
+        border-radius: 999px;
+        padding: 5px 8px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .table-tools {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin: -2px 0 8px;
+      }
+      .tool {
+        border: 1px solid #c8d7e6;
+        background: #ffffff;
+        color: #334155;
+        border-radius: 7px;
+        padding: 5px 8px;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 980px) {
+        .layout { grid-template-columns: 1fr; }
+        .side { position: static; }
+        .fields, .editable-map { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      }
+
+      @media (max-width: 620px) {
+        .top { align-items: flex-start; padding: 14px; flex-direction: column; }
+        .intro, .layout { padding-left: 14px; padding-right: 14px; }
+        .builder-head { flex-direction: column; }
+        .actions { justify-content: flex-start; }
+        .fields, .editable-map { grid-template-columns: 1fr; }
+        .sheet-wrap { padding: 10px; }
+        .sheet { transform: scale(.56); transform-origin: top left; margin-bottom: -470px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <img class="mark" src="/brand/assur-hex-solid-royal.svg" alt="ASSUR Chile" />
+        <div><strong>ASSUR</strong><span>CHILE</span></div>
+      </div>
+      <nav aria-label="Secciones">
+        <a href="#constructor">Constructor</a>
+        <a href="#alarma">Alarma</a>
+        <a href="#monitoreo">Monitoreo</a>
+        <a href="#cerco">Cerco eléctrico</a>
+      </nav>
+    </header>
+
+    <section class="intro">
+      <h1>Maqueta para cotizaciones automáticas</h1>
+      <p>Referencia visual y funcional para convertir las cotizaciones actuales en plantillas editables dentro de ASSUR Chile. La idea es que el sistema complete datos desde cliente, instalación, cotización, paquete, materiales, servicio recurrente y condiciones comerciales, permitiendo modificar cualquier texto y ajustar tablas antes de exportar.</p>
+    </section>
+
+    <main class="layout">
+      <aside class="panel side">
+        <div class="side-title">Plantillas iniciales</div>
+        <div class="template-list">
+          <div class="template-item">
+            <strong>Seguridad electrónica</strong>
+            <span>Alarma interior + monitoreo + opción videoverificación.</span>
+            <span class="pill blue">Proyecto + MRR</span>
+          </div>
+          <div class="template-item">
+            <strong>Monitoreo de alarmas</strong>
+            <span>Sistemas de alarma, notas de compatibilidad y servicio mensual UF.</span>
+            <span class="pill green">Recurrente</span>
+          </div>
+          <div class="template-item">
+            <strong>Cerco eléctrico</strong>
+            <span>Metros lineales, valor de proyecto, equipamiento base y notas.</span>
+            <span class="pill amber">Proyecto</span>
+          </div>
+        </div>
+
+        <div class="side-title" style="margin-top:22px">Campos editables</div>
+        <div class="template-list">
+          <div class="template-item"><strong>Identidad</strong><span>Logo, razón social emisora, datos empresa.</span></div>
+          <div class="template-item"><strong>Contenido</strong><span>Introducción, notas técnicas, notas comerciales, cierre.</span></div>
+          <div class="template-item"><strong>Datos automáticos</strong><span>Cliente, fecha, productos, precio, MRR, forma de pago.</span></div>
+        </div>
+      </aside>
+
+      <section>
+        <section class="panel builder" id="constructor">
+          <div class="builder-head">
+            <div>
+              <h2>Constructor dentro de ASSUR Chile</h2>
+              <p>Desde una cotización o propuesta, el usuario elige plantilla, revisa textos, ajusta condiciones y genera PDF.</p>
+            </div>
+            <div class="actions">
+              <button class="btn ghost">Vista previa</button>
+              <button class="btn">Exportar PDF</button>
+            </div>
+          </div>
+          <div class="fields">
+            <div class="field"><label>Plantilla</label><select><option>Seguridad electrónica</option><option>Monitoreo de alarmas</option><option>Cerco eléctrico</option></select></div>
+            <div class="field"><label>Cliente</label><input value="Centro de Psicología Integral" /></div>
+            <div class="field"><label>Fecha</label><input value="10 de abril de 2026" /></div>
+            <div class="field"><label>Validez</label><input value="5 días" /></div>
+          </div>
+
+          <div class="editable-map">
+            <div class="editable-card"><strong>Todo el documento editable</strong><span>Logo, encabezado, destinatario, introducción, títulos, notas, condiciones, cierre y pie.</span></div>
+            <div class="editable-card"><strong>Tablas modificables</strong><span>Agregar/quitar filas, columnas, ítems, cantidades, valores y subtotales según cada cotización.</span></div>
+            <div class="editable-card"><strong>Variables automáticas sugeridas</strong><span>El sistema precarga datos y montos, pero el usuario autorizado puede ajustar el formato final.</span></div>
+          </div>
+        </section>
+
+        <div class="preview-grid">
+          <section class="panel sheet-wrap" id="alarma">
+            <div class="sheet">
+              <header class="quote-header">
+                <div class="quote-logo"><img class="mark" src="/brand/assur-hex-solid-royal.svg" alt="ASSUR Chile" /><div contenteditable="true" class="editable"><strong>ASSUR</strong><span>CHILE</span></div></div>
+                <div class="quote-meta editable" contenteditable="true">
+                  <b>COT-2026-001</b><br />
+                  René León Nº 80, Curicó<br />
+                  9 8289 0948 · 75 2 203900<br />
+                  mherrera@mdsg.cl
+                </div>
+              </header>
+
+              <div class="quote-date editable" contenteditable="true">Curicó, 10 de abril de 2026</div>
+              <div class="recipient editable" contenteditable="true">Estimados<br /><strong>Centro de Psicología Integral</strong>Presente</div>
+              <p class="lead editable" contenteditable="true">Junto con saludar y de acuerdo con lo requerido, tenemos el agrado de presentar cotización por instalación de sistema de alarma con monitoreo remoto, de acuerdo con el siguiente detalle:</p>
+
+              <section class="section">
+                <div class="section-title"><span contenteditable="true" class="editable">Opción 1: Alarma con servicio de monitoreo</span><span class="edit-badge">Editable</span></div>
+                <div class="table-tools"><button class="tool">+ Fila</button><button class="tool">- Fila</button><button class="tool">+ Columna</button><button class="tool">Duplicar tabla</button></div>
+                <table class="quote-table">
+                  <thead><tr><th>Equipamiento</th><th class="num">Cantidad</th><th class="num">Valor neto</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true" class="editable">Central de alarma Intelbras AMT 2018</td><td contenteditable="true" class="num editable">1</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Módulo XG 4G respaldo</td><td contenteditable="true" class="num editable">1</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Batería de respaldo</td><td contenteditable="true" class="num editable">1</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Sirena 30W</td><td contenteditable="true" class="num editable">1</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Sensor infrarrojo</td><td contenteditable="true" class="num editable">4</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Sensor magnético</td><td contenteditable="true" class="num editable">2</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Configuración y puesta en marcha</td><td contenteditable="true" class="num editable">1</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr class="total-row"><td colspan="2" contenteditable="true" class="editable">Valor neto del proyecto</td><td contenteditable="true" class="num editable">$384.261</td></tr>
+                  </tbody>
+                </table>
+                <ul class="notes editable" contenteditable="true">
+                  <li>El sistema permite detección y notificación oportuna de eventos de intrusión, operando de forma local y remota.</li>
+                  <li>La comunicación cuenta con respaldo celular para transmisión de señales ante caídas de red.</li>
+                  <li>El costo mensual del servicio de monitoreo es de <b>0,8 UF + IVA</b>.</li>
+                </ul>
+              </section>
+
+              <hr class="option-break" />
+              <section class="section">
+                <div class="section-title"><span contenteditable="true" class="editable">Opción 2: Servicio de videoverificación</span><span class="edit-badge">Editable</span></div>
+                <div class="table-tools"><button class="tool">+ Fila</button><button class="tool">- Fila</button><button class="tool">+ Columna</button></div>
+                <table class="quote-table">
+                  <thead><tr><th>Servicio</th><th class="num">Valor neto mensual</th></tr></thead>
+                  <tbody><tr><td contenteditable="true" class="editable">Videoverificación alarma + CCTV</td><td contenteditable="true" class="num editable">1,45 UF</td></tr></tbody>
+                </table>
+                <ul class="notes editable" contenteditable="true">
+                  <li>Requiere sistema de alarmas instalado y acceso remoto a cámaras.</li>
+                  <li>Frente a activación, central revisa imágenes en tiempo real y grabaciones.</li>
+                </ul>
+              </section>
+
+              <footer class="footer editable" contenteditable="true"><span>Valores netos · Vigencia 5 días · Facturación al inicio de faenas</span><span>ASSUR Chile</span></footer>
+            </div>
+          </section>
+
+          <section class="panel sheet-wrap" id="monitoreo">
+            <div class="sheet">
+              <header class="quote-header">
+                <div class="quote-logo"><img class="mark" src="/brand/assur-hex-solid-royal.svg" alt="ASSUR Chile" /><div contenteditable="true" class="editable"><strong>ASSUR</strong><span>CHILE</span></div></div>
+                <div class="quote-meta editable" contenteditable="true"><b>COT-2026-002</b><br />René León Nº 80, Curicó<br />mherrera@mdsg.cl</div>
+              </header>
+              <div class="quote-date editable" contenteditable="true">Curicó, 21 de abril de 2026</div>
+              <div class="recipient editable" contenteditable="true">Estimado<br /><strong>Eduardo Ossa</strong>Presente</div>
+              <p class="lead editable" contenteditable="true">Presentamos cotización por instalación de sistemas de alarmas con monitoreo remoto para Casona.</p>
+              <section class="section">
+                <div class="section-title"><span contenteditable="true" class="editable">Sistemas de alarmas Casona</span><span class="edit-badge">Tabla editable</span></div>
+                <div class="table-tools"><button class="tool">+ Fila</button><button class="tool">- Fila</button><button class="tool">+ Columna</button></div>
+                <table class="quote-table">
+                  <thead><tr><th>Equipamiento</th><th class="num">Cantidad</th><th class="num">Valor neto</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true" class="editable">Central de alarma Intelbras AMT 2018</td><td contenteditable="true" class="num editable">2</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Módulo XG 4G respaldo</td><td contenteditable="true" class="num editable">2</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Sensor infrarrojo/microondas exterior</td><td contenteditable="true" class="num editable">7</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Sensor infrarrojo interior</td><td contenteditable="true" class="num editable">11</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr><td contenteditable="true" class="editable">Sensor magnético</td><td contenteditable="true" class="num editable">2</td><td contenteditable="true" class="num editable">Incluido</td></tr>
+                    <tr class="total-row"><td colspan="2" contenteditable="true" class="editable">Valor neto del proyecto</td><td contenteditable="true" class="num editable">$935.015</td></tr>
+                  </tbody>
+                </table>
+                <ul class="notes editable" contenteditable="true">
+                  <li>No es posible integrar al monitoreo el equipamiento actual por incompatibilidades de marca.</li>
+                  <li>Servicio mensual de monitoreo para dos sistemas: <b>1,6 UF + IVA</b>.</li>
+                </ul>
+              </section>
+              <section class="section">
+                <div class="section-title"><span contenteditable="true" class="editable">Notas comerciales</span><span class="edit-badge">Texto editable</span></div>
+                <ul class="notes editable" contenteditable="true">
+                  <li>Valores netos con vigencia de 5 días.</li>
+                  <li>Facturación al inicio de faenas y pago a 30 días.</li>
+                  <li>Garantía de equipos por 6 meses, excluyendo manipulación de terceros, clima o fallas eléctricas.</li>
+                </ul>
+              </section>
+              <footer class="footer editable" contenteditable="true"><span>Banco de Chile · Cuenta Corriente · segel@mdsg.cl</span><span>ASSUR Chile</span></footer>
+            </div>
+          </section>
+
+          <section class="panel sheet-wrap" id="cerco">
+            <div class="sheet">
+              <header class="quote-header">
+                <div class="quote-logo"><img class="mark" src="/brand/assur-hex-solid-royal.svg" alt="ASSUR Chile" /><div contenteditable="true" class="editable"><strong>ASSUR</strong><span>CHILE</span></div></div>
+                <div class="quote-meta editable" contenteditable="true"><b>COT-2025-087</b><br />René León Nº 80, Curicó<br />75 2 203900</div>
+              </header>
+              <div class="quote-date editable" contenteditable="true">Curicó, 17 de diciembre de 2025</div>
+              <div class="recipient editable" contenteditable="true">Señor<br /><strong>José Luis Martínez</strong>Presente</div>
+              <p class="lead editable" contenteditable="true">Tenemos el agrado de presentar cotización por proyecto de cerco eléctrico perimetral para Bodegas Alambres Chile, de acuerdo con el siguiente detalle:</p>
+              <section class="section">
+                <div class="section-title"><span contenteditable="true" class="editable">Proyecto cerco eléctrico perimetral</span><span class="edit-badge">Tabla editable</span></div>
+                <div class="table-tools"><button class="tool">+ Fila</button><button class="tool">- Fila</button><button class="tool">+ Columna</button></div>
+                <table class="quote-table">
+                  <thead><tr><th>Sector</th><th class="num">Metros</th><th class="num">Valor neto proyecto</th></tr></thead>
+                  <tbody>
+                    <tr><td contenteditable="true" class="editable">Perímetro Sur Oriente, bodegas</td><td contenteditable="true" class="num editable">150</td><td contenteditable="true" class="num editable">$2.719.365</td></tr>
+                    <tr class="total-row"><td colspan="2" contenteditable="true" class="editable">Total neto proyecto</td><td contenteditable="true" class="num editable">$2.719.365</td></tr>
+                  </tbody>
+                </table>
+                <ul class="notes editable" contenteditable="true">
+                  <li>Instalación de cerco eléctrico perimetral de 12 hebras, distribuidas en pilar metálico existente.</li>
+                  <li>El cerco será conectado a central de alarmas, reportando activaciones por sabotaje o corte de líneas.</li>
+                </ul>
+              </section>
+              <section class="section">
+                <div class="section-title"><span contenteditable="true" class="editable">Equipamiento base</span><span class="edit-badge">Editable</span></div>
+                <div class="table-tools"><button class="tool">+ Fila</button><button class="tool">- Fila</button><button class="tool">+ Columna</button></div>
+                <table class="quote-table">
+                  <tbody>
+                    <tr><td contenteditable="true" class="editable">Energizador cerco eléctrico Speedrite</td><td contenteditable="true" class="editable">Batería respaldo 12/7</td></tr>
+                    <tr><td contenteditable="true" class="editable">Sirena 30W con baliza y protección metálica</td><td contenteditable="true" class="editable">Central de alarma monitoreada</td></tr>
+                    <tr><td contenteditable="true" class="editable">Placas de advertencia, tensión, paso y fijación</td><td contenteditable="true" class="editable">Alambre galvanizado N°18</td></tr>
+                    <tr><td contenteditable="true" class="editable">Gabinete eléctrico con automático</td><td contenteditable="true" class="editable">Conexión y puesta en marcha</td></tr>
+                  </tbody>
+                </table>
+              </section>
+              <footer class="footer editable" contenteditable="true"><span>Valores netos · Vigencia 5 días · Pago 30 días</span><span>ASSUR Chile</span></footer>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

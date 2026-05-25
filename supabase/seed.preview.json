@@ -1,0 +1,456 @@
+{
+  "companies": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "name": "ASSUR Chile",
+      "rut": null
+    }
+  ],
+  "clients": [
+    {
+      "id": "demo-patagonia-cliente",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "rut": "76.543.210-9",
+      "legal_name": "Patagonia Fresh SpA",
+      "commercial_name": "Patagonia Fresh",
+      "status": "Activo",
+      "executive": "Demo Comercial",
+      "source": "manual",
+      "external_id": "",
+      "metadata": {
+        "nombreComercial": "Patagonia Fresh",
+        "rubro": "Agroindustria",
+        "contacto": "Carolina Molina",
+        "telefono": "+56 9 4321 9876",
+        "email": "operaciones@patagoniafresh.test",
+        "direccion": "Ruta 5 Sur km 209, Molina, Región del Maule",
+        "notas": "Cliente ficticio creado para validar KPIs comerciales, operativos y financieros.",
+        "centroCosto": "PF-MOLINA",
+        "origenId": "demo",
+        "createdAt": "2026-05-04T04:05:28.321Z",
+        "updatedAt": "2026-05-11T02:41:09.172Z"
+      },
+      "created_at": "2026-05-04T04:05:28.321Z",
+      "updated_at": "2026-05-11T02:41:09.172Z"
+    }
+  ],
+  "sites": [
+    {
+      "id": "demo-patagonia-instalacion",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "client_id": "demo-patagonia-cliente",
+      "name": "Molina",
+      "city": "",
+      "region": "Maule",
+      "address": "Planta Molina, Ruta 5 Sur km 209",
+      "status": "Activa",
+      "metadata": {
+        "comuna": "Molina",
+        "responsable": "Luis Araya",
+        "telefono": "+56 9 8765 1234",
+        "observaciones": "Instalación ficticia para mejora tecnológica de seguridad.",
+        "geoLat": -35.116,
+        "geoLng": -71.282,
+        "geoRadioMetros": 180,
+        "origen": "manual",
+        "origenId": "demo",
+        "createdAt": "2026-05-04T04:05:28.321Z",
+        "updatedAt": "2026-05-11T16:17:37.947Z"
+      },
+      "created_at": "2026-05-04T04:05:28.321Z",
+      "updated_at": "2026-05-11T16:17:37.947Z"
+    }
+  ],
+  "opportunities": [],
+  "proposals": [],
+  "projects": [
+    {
+      "id": "demo-patagonia-proyecto",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "client_id": "demo-patagonia-cliente",
+      "site_id": "demo-patagonia-instalacion",
+      "proposal_id": null,
+      "code": "PRY-2026-900",
+      "name": "Mejora tecnológica",
+      "category": "Seguridad electrónica",
+      "operational_status": "En ejecución",
+      "financial_status": "Cobrado parcial",
+      "sold_value": 16500000,
+      "estimated_cost": 9850000,
+      "cost_center": "PF-MOLINA",
+      "start_date": "2026-05-11",
+      "end_date": "2026-06-18",
+      "metadata": {
+        "ejecutivo": "Demo Comercial",
+        "subCentroCosto": "MOL-SEG",
+        "valorProyecto": 16500000,
+        "valorFinal": 16500000,
+        "fechaAprobacion": "2026-05-04",
+        "fechaFacturacion": "",
+        "nroFactura": "F-DEMO-9001",
+        "montoFacturado": 11550000,
+        "hitosFacturacion": [
+          {
+            "id": "demo-patagonia-hito-1",
+            "nombre": "Anticipo 40%",
+            "pct": 40,
+            "monto": 6600000,
+            "estado": "Cobrado",
+            "nroFactura": "F-DEMO-9001",
+            "facturaId": "demo-patagonia-factura-1",
+            "fechaFacturacion": "2026-04-27",
+            "fechaCobro": "2026-05-02"
+          },
+          {
+            "id": "demo-patagonia-hito-2",
+            "nombre": "Entrega equipos 30%",
+            "pct": 30,
+            "monto": 4950000,
+            "estado": "Cobrado",
+            "nroFactura": "F-DEMO-9002",
+            "facturaId": "demo-patagonia-factura-2",
+            "fechaFacturacion": "2026-05-04",
+            "fechaCobro": "2026-05-04"
+          },
+          {
+            "id": "demo-patagonia-hito-3",
+            "nombre": "Cierre y puesta en marcha 30%",
+            "pct": 30,
+            "monto": 4950000,
+            "estado": "Pendiente"
+          }
+        ],
+        "tareas": [
+          {
+            "id": "demo-patagonia-tarea-1",
+            "nombre": "Levantamiento y replanteo técnico",
+            "descripcion": "Validar ubicación de cámaras, alarmas y red.",
+            "estado": "Completada",
+            "etapa": "Visita técnica",
+            "duracionEstimada": 6,
+            "fechaTerminada": "2026-04-29",
+            "orden": 0
+          },
+          {
+            "id": "demo-patagonia-tarea-2",
+            "nombre": "Cableado estructurado planta Molina",
+            "descripcion": "Tendido de canalizaciones y puntos de red.",
+            "estado": "En ejecución",
+            "etapa": "Cableado estructurado",
+            "duracionEstimada": 24,
+            "orden": 1
+          },
+          {
+            "id": "demo-patagonia-tarea-3",
+            "nombre": "Montaje de 20 cámaras IP",
+            "descripcion": "Montaje, orientación y etiquetado.",
+            "estado": "Pendiente",
+            "etapa": "Montaje de equipos",
+            "duracionEstimada": 18,
+            "orden": 2
+          },
+          {
+            "id": "demo-patagonia-tarea-4",
+            "nombre": "Configuración de 3 alarmas",
+            "descripcion": "Configuración sensores, particiones y comunicación.",
+            "estado": "Pendiente",
+            "etapa": "Configuración",
+            "duracionEstimada": 8,
+            "orden": 3
+          },
+          {
+            "id": "demo-patagonia-tarea-5",
+            "nombre": "Pruebas, acta y entrega",
+            "descripcion": "Pruebas de monitoreo, capacitación y cierre.",
+            "estado": "Pendiente",
+            "etapa": "Entrega y cierre",
+            "duracionEstimada": 6,
+            "orden": 4
+          }
+        ],
+        "costos": [
+          {
+            "id": "demo-patagonia-costo-1",
+            "tipo": "Materiales",
+            "desc": "Cámaras, alarmas, NVR, cableado y accesorios",
+            "monto": 7200000,
+            "total": 7200000,
+            "origen": "manual",
+            "fecha": "2026-05-04"
+          },
+          {
+            "id": "demo-patagonia-costo-2",
+            "tipo": "Mano de obra",
+            "desc": "Instalación técnica estimada",
+            "monto": 2100000,
+            "total": 2100000,
+            "origen": "manual",
+            "fecha": "2026-05-04"
+          },
+          {
+            "id": "demo-patagonia-costo-3",
+            "tipo": "Traslados y viáticos",
+            "desc": "Equipo técnico Molina",
+            "monto": 450000,
+            "total": 450000,
+            "origen": "manual",
+            "fecha": "2026-05-04"
+          }
+        ],
+        "solicitudesMaterial": [
+          {
+            "id": "demo-patagonia-sol-1",
+            "tecnicoNombre": "Técnico Demo",
+            "estado": "entregada",
+            "fecha": "2026-05-04",
+            "items": [
+              {
+                "nombre": "Cable UTP Cat6 exterior",
+                "cantidad": 600,
+                "unidad": "m"
+              }
+            ],
+            "fechaDecision": "2026-05-04T04:15:16.938Z"
+          }
+        ],
+        "timeline": [
+          {
+            "fecha": "2026-05-04T04:05:28.321Z",
+            "tipo": "demo",
+            "desc": "Proyecto demo Patagonia Fresh cargado"
+          },
+          {
+            "fecha": "2026-05-04T04:15:13.288Z",
+            "tipo": "material",
+            "desc": "Solicitud de material aprobada"
+          },
+          {
+            "fecha": "2026-05-04T04:15:15.404Z",
+            "tipo": "material",
+            "desc": "Solicitud de material aprobada"
+          },
+          {
+            "fecha": "2026-05-04T04:15:16.938Z",
+            "tipo": "material",
+            "desc": "Solicitud de material entregada"
+          }
+        ],
+        "observaciones": "Proyecto ficticio para validar dashboard, pipeline, caja, CxC/CxP y rentabilidad.",
+        "createdAt": "2026-05-04T04:05:28.321Z",
+        "updatedAt": "2026-05-11T16:18:28.925Z"
+      },
+      "created_at": "2026-05-04T04:05:28.321Z",
+      "updated_at": "2026-05-11T16:18:28.925Z"
+    }
+  ],
+  "project_tasks": [
+    {
+      "id": "demo-patagonia-tarea-1",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "project_id": "demo-patagonia-proyecto",
+      "title": "Levantamiento y replanteo técnico",
+      "stage": "Visita técnica",
+      "status": "Completada",
+      "assigned_to": null,
+      "estimated_hours": 6,
+      "started_at": null,
+      "completed_at": null,
+      "metadata": {
+        "descripcion": "Validar ubicación de cámaras, alarmas y red.",
+        "fechaTerminada": "2026-04-29",
+        "orden": 0
+      },
+      "created_at": "2026-05-13T15:59:51.803Z",
+      "updated_at": "2026-05-13T15:59:51.804Z"
+    },
+    {
+      "id": "demo-patagonia-tarea-2",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "project_id": "demo-patagonia-proyecto",
+      "title": "Cableado estructurado planta Molina",
+      "stage": "Cableado estructurado",
+      "status": "En ejecución",
+      "assigned_to": null,
+      "estimated_hours": 24,
+      "started_at": null,
+      "completed_at": null,
+      "metadata": {
+        "descripcion": "Tendido de canalizaciones y puntos de red.",
+        "orden": 1
+      },
+      "created_at": "2026-05-13T15:59:51.804Z",
+      "updated_at": "2026-05-13T15:59:51.804Z"
+    },
+    {
+      "id": "demo-patagonia-tarea-3",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "project_id": "demo-patagonia-proyecto",
+      "title": "Montaje de 20 cámaras IP",
+      "stage": "Montaje de equipos",
+      "status": "Pendiente",
+      "assigned_to": null,
+      "estimated_hours": 18,
+      "started_at": null,
+      "completed_at": null,
+      "metadata": {
+        "descripcion": "Montaje, orientación y etiquetado.",
+        "orden": 2
+      },
+      "created_at": "2026-05-13T15:59:51.804Z",
+      "updated_at": "2026-05-13T15:59:51.804Z"
+    },
+    {
+      "id": "demo-patagonia-tarea-4",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "project_id": "demo-patagonia-proyecto",
+      "title": "Configuración de 3 alarmas",
+      "stage": "Configuración",
+      "status": "Pendiente",
+      "assigned_to": null,
+      "estimated_hours": 8,
+      "started_at": null,
+      "completed_at": null,
+      "metadata": {
+        "descripcion": "Configuración sensores, particiones y comunicación.",
+        "orden": 3
+      },
+      "created_at": "2026-05-13T15:59:51.804Z",
+      "updated_at": "2026-05-13T15:59:51.804Z"
+    },
+    {
+      "id": "demo-patagonia-tarea-5",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "project_id": "demo-patagonia-proyecto",
+      "title": "Pruebas, acta y entrega",
+      "stage": "Entrega y cierre",
+      "status": "Pendiente",
+      "assigned_to": null,
+      "estimated_hours": 6,
+      "started_at": null,
+      "completed_at": null,
+      "metadata": {
+        "descripcion": "Pruebas de monitoreo, capacitación y cierre.",
+        "orden": 4
+      },
+      "created_at": "2026-05-13T15:59:51.804Z",
+      "updated_at": "2026-05-13T15:59:51.804Z"
+    }
+  ],
+  "recurring_services": [],
+  "invoices": [
+    {
+      "id": "demo-patagonia-factura-2",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "client_id": null,
+      "project_id": "demo-patagonia-proyecto",
+      "folio": "F-DEMO-9002",
+      "issue_date": "2026-05-04",
+      "due_date": "2026-06-03",
+      "amount": 4950000,
+      "paid_amount": 0,
+      "status": "Emitida",
+      "source": "manual",
+      "external_id": "",
+      "metadata": {
+        "rutCliente": "76.543.210-9",
+        "saldo": 4950000,
+        "hitoId": "demo-patagonia-hito-2",
+        "observaciones": "Entrega equipos 30%",
+        "createdAt": "2026-05-07T01:29:48.604Z",
+        "updatedAt": "2026-05-11T15:26:38.779Z"
+      },
+      "created_at": "2026-05-07T01:29:48.604Z",
+      "updated_at": "2026-05-11T15:26:38.779Z"
+    },
+    {
+      "id": "demo-patagonia-factura-1",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "client_id": null,
+      "project_id": "demo-patagonia-proyecto",
+      "folio": "F-DEMO-9001",
+      "issue_date": "2026-04-27",
+      "due_date": "2026-05-12",
+      "amount": 6600000,
+      "paid_amount": 6600000,
+      "status": "Emitida",
+      "source": "manual",
+      "external_id": "",
+      "metadata": {
+        "rutCliente": "76.543.210-9",
+        "saldo": 0,
+        "hitoId": "demo-patagonia-hito-1",
+        "observaciones": "Anticipo 40%",
+        "createdAt": "2026-05-07T01:29:57.725Z",
+        "updatedAt": "2026-05-11T16:18:28.927Z"
+      },
+      "created_at": "2026-05-07T01:29:57.725Z",
+      "updated_at": "2026-05-11T16:18:28.927Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": "demo-patagonia-pago-1",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "invoice_id": "demo-patagonia-factura-1",
+      "payment_date": "2026-05-02",
+      "amount": 6600000,
+      "method": "Transferencia",
+      "source": "manual",
+      "external_id": "",
+      "metadata": {
+        "observaciones": "Pago ficticio anticipo Patagonia Fresh",
+        "createdAt": "2026-05-04T04:05:28.321Z",
+        "updatedAt": "2026-05-11T15:26:38.782Z"
+      },
+      "created_at": "2026-05-04T04:05:28.321Z"
+    }
+  ],
+  "accounts_payable": [
+    {
+      "id": "demo-patagonia-cxp-2",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "project_id": null,
+      "supplier_name": "Servicios Técnicos Demo",
+      "folio": "OC-DEMO-702",
+      "issue_date": "2026-05-04",
+      "due_date": "2026-06-18",
+      "amount": 1350000,
+      "paid_amount": 0,
+      "status": "Pendiente",
+      "source": "manual",
+      "external_id": "",
+      "metadata": {
+        "rutProveedor": "76.222.333-4",
+        "saldo": 1350000,
+        "centroCosto": "PF-MOLINA",
+        "createdAt": "2026-05-07T01:27:11.591Z",
+        "updatedAt": "2026-05-11T15:25:42.954Z"
+      },
+      "created_at": "2026-05-07T01:27:11.591Z",
+      "updated_at": "2026-05-11T15:25:42.954Z"
+    },
+    {
+      "id": "demo-patagonia-cxp-1",
+      "company_id": "00000000-0000-0000-0000-000000000001",
+      "project_id": null,
+      "supplier_name": "Proveedor Cámaras Demo",
+      "folio": "OC-DEMO-701",
+      "issue_date": "2026-05-01",
+      "due_date": "2026-05-24",
+      "amount": 4200000,
+      "paid_amount": 0,
+      "status": "Pendiente",
+      "source": "softland",
+      "external_id": "",
+      "metadata": {
+        "rutProveedor": "77.111.222-3",
+        "saldo": 4200000,
+        "centroCosto": "PF-MOLINA",
+        "createdAt": "2026-05-07T01:28:08.857Z",
+        "updatedAt": "2026-05-11T16:18:35.937Z"
+      },
+      "created_at": "2026-05-07T01:28:08.857Z",
+      "updated_at": "2026-05-11T16:18:35.937Z"
+    }
+  ]
+}

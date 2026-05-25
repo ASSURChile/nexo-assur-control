@@ -1,0 +1,44 @@
+{
+  "name": "assur-control",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "backend": "node server/index.mjs",
+    "backend:check": "node scripts/check-backend.mjs",
+    "backend:test": "node scripts/test-backend-crud.mjs",
+    "audit:functional": "node scripts/functional-audit.mjs",
+    "supabase:check": "node scripts/check-supabase-seed.mjs",
+    "supabase:schema:check": "node scripts/check-supabase-schema.mjs",
+    "supabase:remote-schema:check": "node scripts/check-supabase-remote-schema.mjs",
+    "qa:packages-cloud": "node scripts/qa-commercial-package-cloud.mjs",
+    "qa:e2e-cloud": "node scripts/create-e2e-flow.mjs",
+    "qa:cleanup-cloud": "node scripts/cleanup-qa-cloud.mjs",
+    "supabase:seed:preview": "node scripts/check-supabase-seed.mjs --write",
+    "supabase:seed:sql": "node scripts/generate-supabase-seed-sql.mjs",
+    "supabase:mount:kit": "node scripts/generate-supabase-mount-kit.mjs",
+    "supabase:mount:check": "node scripts/check-supabase-mount-kit.mjs",
+    "supabase:push:dry": "node scripts/push-supabase-seed.mjs",
+    "supabase:push": "node scripts/push-supabase-seed.mjs --apply",
+    "supabase:push:auth": "node scripts/push-supabase-seed-authenticated.mjs",
+    "provider:check": "node scripts/check-provider-config.mjs",
+    "audit:ui": "node scripts/audit-ui-structure.mjs",
+    "audit:data": "node scripts/audit-data-contract.mjs",
+    "perf:check": "node scripts/check-bundle-size.mjs",
+    "stage:check": "node scripts/check-current-stage.mjs",
+    "prod:check": "node scripts/check-production-readiness.mjs",
+    "build": "vite build",
+    "smoke": "node scripts/smoke.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.2"
+  }
+}
