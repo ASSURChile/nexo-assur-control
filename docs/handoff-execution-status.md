@@ -32,15 +32,16 @@ El CLI local `wrangler` está autenticado actualmente con una cuenta personal:
 moisesahc5@gmail.com
 ```
 
-Esto significa que el deploy desde este computador todavía depende de una sesión personal.  
-Antes del traspaso final, Cloudflare debe quedar accesible desde `integracion@mdsg.cl` o desde una organización/cuenta corporativa donde esa cuenta tenga permisos administrativos.
+Esto significa que el deploy desde este computador todavía usa una sesión personal.
+La consola Cloudflare ya muestra `integracion@mdsg.cl` como miembro activo de la cuenta, por lo que el acceso administrativo queda compartido. El siguiente paso recomendado es que el informático inicie sesión con `integracion@mdsg.cl` y ejecute un deploy de prueba o revise Pages desde su propio equipo.
 
 Acción requerida:
 
 ```txt
-[ ] Invitar/agregar integracion@mdsg.cl a Cloudflare.
-[ ] Validar que puede ver el proyecto Pages assur-control.
-[ ] Validar que puede publicar o administrar deploys.
+[x] Invitar/agregar integracion@mdsg.cl a Cloudflare.
+[x] Validar que puede ver la cuenta Cloudflare.
+[ ] Validar desde la cuenta corporativa que puede ver el proyecto Pages assur-control.
+[ ] Validar desde la cuenta corporativa que puede publicar o administrar deploys.
 [ ] Mantener a Moisés como respaldo hasta completar transición.
 ```
 
@@ -56,11 +57,20 @@ Staging: nexo-assur-staging / vdegakzslrrdvpdkarmn
 Acción requerida:
 
 ```txt
-[ ] Invitar/agregar integracion@mdsg.cl a Supabase.
-[ ] Validar acceso a nexo-assur-prod.
-[ ] Validar acceso a nexo-assur-staging.
-[ ] Confirmar permisos para Auth, Database, Storage y SQL Editor.
+[x] Invitar/agregar integracion@mdsg.cl a Supabase.
+[x] Validar acceso a nexo-assur-prod.
+[x] Validar acceso a nexo-assur-staging.
+[x] Confirmar permisos administrativos visibles para ambos proyectos.
 ```
+
+Estado técnico validado el 2026-06-15:
+
+```txt
+Producción: nexo-assur-prod / Healthy / https://ldodrcedviorjvbpladb.supabase.co
+Staging: nexo-assur-staging / Healthy / https://vdegakzslrrdvpdkarmn.supabase.co
+```
+
+La validación remota del schema respondió correctamente para tablas principales en producción y staging.
 
 ### Git / Repositorio
 
@@ -78,8 +88,15 @@ Acción requerida:
 ```txt
 [x] Crear repositorio privado en GitHub bajo cuenta/organización corporativa.
 [x] Subir el proyecto desde este workspace.
-[ ] Invitar al informático con su correo propio.
+[ ] Invitar al informático con su correo propio, si será distinto de integracion@mdsg.cl.
 [ ] Mantener a Moisés como respaldo temporal.
+```
+
+El remoto local responde por SSH con la llave de deploy del proyecto:
+
+```txt
+origin -> git@github.com:ASSURChile/nexo-assur-control.git
+main -> 5684150 Documentar pasos de traspaso de accesos
 ```
 
 ## Archivos Que No Deben Entregarse Por Repositorio
@@ -135,9 +152,9 @@ Primero:
 ```txt
 [x] Repositorio corporativo creado.
 [x] Proyecto subido sin .env.local, tmp, backups ni dist.
-[ ] Cloudflare accesible por integracion@mdsg.cl.
-[ ] Supabase accesible por integracion@mdsg.cl.
-[ ] Informático invitado con correo propio.
+[x] Cloudflare con integracion@mdsg.cl como miembro activo.
+[x] Supabase con integracion@mdsg.cl como Administrator en prod/staging.
+[ ] Informático invitado con correo propio, si no usará integracion@mdsg.cl.
 [ ] Informático puede clonar repo.
 [ ] Informático puede ejecutar npm install.
 [ ] Informático puede ejecutar npm run build.
@@ -146,3 +163,19 @@ Primero:
 [ ] Moisés mantiene acceso de respaldo.
 [ ] Tokens personales temporales revisados/revocados.
 ```
+
+## Checks Ejecutados
+
+```txt
+[x] supabase:mount:check
+[x] hardening:check
+[x] supabase remote schema check contra producción
+[x] supabase remote schema check contra staging
+[x] git ls-remote origin main
+```
+
+Notas:
+
+- `hardening:check` queda OK con advertencias esperadas porque los archivos `.env.*.example` mantienen placeholders para no versionar claves reales.
+- El CLI `wrangler` local sigue autenticado con `moisesahc5@gmail.com`; eso no bloquea la operación, pero el cierre limpio exige que `integracion@mdsg.cl` o el informático hagan login propio para futuros deploys.
+- `gh` CLI no está instalado en este Mac, por lo que la verificación GitHub se hizo por remoto SSH.

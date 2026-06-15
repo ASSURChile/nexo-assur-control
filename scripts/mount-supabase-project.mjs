@@ -162,6 +162,7 @@ async function main() {
     "11_commercial_packages_cloud.sql",
     "12_operating_context_optional.sql",
     "13_seed_roles_permissions.sql",
+    "14_assistant_ai.sql",
   ]) {
     await query(readMount(file), file.replace(".sql", ""));
   }
