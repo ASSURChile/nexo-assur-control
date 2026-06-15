@@ -3,6 +3,8 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ALLOWED_KEYS, COLLECTIONS, COLLECTION_BY_NAME, keyToName, nameToKey } from "./collections.mjs";
+import { buildSoftlandContractReport } from "./softlandAdapter.mjs";
+import { getSoftlandConfigStatus, runSoftlandConnector } from "./softlandConnectors.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const HOST = process.env.ASSUR_BACKEND_HOST || "127.0.0.1";
@@ -124,6 +126,28 @@ const server = createServer(async (req, res) => {
         ...collection,
         count: Array.isArray(store[collection.key]) ? store[collection.key].length : store[collection.key] == null ? 0 : 1,
       })));
+    }
+
+    if (url.pathname === "/api/softland/status" && req.method === "GET") {
+      return send(res, 200, getSoftlandConfigStatus());
+    }
+
+    if (url.pathname === "/api/softland/probe" && req.method === "POST") {
+      const body = await readJson(req) || {};
+      const result = await runSoftlandConnector({
+        entity: body.entity || "clientes",
+        companyCode: body.companyCode || "",
+        since: body.since || "",
+        limit: body.limit || 10,
+        dryRun: body.dryRun !== false,
+      });
+      return send(res, result.ok ? 200 : (result.status || 400), result);
+    }
+
+    if (url.pathname === "/api/softland/normalize" && req.method === "POST") {
+      const body = await readJson(req) || {};
+      const result = buildSoftlandContractReport(body.payload || body, body.entities);
+      return send(res, result.ok ? 200 : 422, result);
     }
 
     if (url.pathname === "/api/backup" && req.method === "GET") {

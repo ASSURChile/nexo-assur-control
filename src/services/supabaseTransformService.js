@@ -5,6 +5,7 @@ const text = (value) => String(value || "").trim();
 const money = (value) => Number(value) || 0;
 const dateOnly = (value) => text(value).slice(0, 10) || null;
 const iso = (value) => text(value) || new Date().toISOString();
+const uuidOrNull = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text(value)) ? text(value) : null;
 const metadataWithout = (row, fields = []) => {
   const blocked = new Set(["password", ...fields]);
   return Object.fromEntries(Object.entries(row || {}).filter(([key]) => !blocked.has(key)));
@@ -254,7 +255,7 @@ function buildQuickQuotes({ companyId, quickQuotes }) {
     status: normalizeStatus(quote.estado || quote.status, "Generada"),
     net_project_value: money(quote.valorProyecto || quote.netProjectValue),
     monthly_recurring_value: money(quote.valorMensual || quote.monthlyRecurringValue),
-    created_by: text(quote.creadoPorId || quote.createdBy) || null,
+    created_by: uuidOrNull(quote.creadoPorId || quote.createdBy),
     metadata: metadataWithout(quote, ["id","paqueteId","packageId","clienteId","clientId","instalacionId","siteId","oportunidadId","opportunityId","propuestaId","proposalId","estado","status","valorProyecto","netProjectValue","valorMensual","monthlyRecurringValue","creadoPorId","createdBy"]),
     created_at: iso(quote.createdAt),
     updated_at: iso(quote.updatedAt || quote.createdAt),
@@ -292,7 +293,7 @@ function buildProjectTasks({ companyId, proyectos }) {
     title: text(tarea.nombre || tarea.titulo) || "Tarea sin nombre",
     stage: text(tarea.etapa),
     status: normalizeStatus(tarea.estado, "Pendiente"),
-    assigned_to: text(tarea.asignadoAId) || null,
+    assigned_to: uuidOrNull(tarea.asignadoAId),
     estimated_hours: money(tarea.duracionEstimada || tarea.horasEstimadas),
     started_at: text(tarea.iniciadoEl) || null,
     completed_at: text(tarea.completadoEl) || null,
@@ -387,12 +388,243 @@ function buildAccountsPayable({ companyId, cuentasPagar }) {
   }));
 }
 
+function buildMaterials({ companyId, materiales }) {
+  return toArray(materiales).map((material, index) => ({
+    id: rowId(material, "material", index),
+    company_id: companyId,
+    sku: text(material.codigo || material.sku),
+    name: text(material.nombre || material.name || material.descripcion) || "Material sin nombre",
+    unit: text(material.unidad || material.unit),
+    unit_cost: money(material.costoUnitario ?? material.precioUnitario ?? material.costo ?? material.unitCost),
+    stock: money(material.stockActual ?? material.stock ?? material.existencia),
+    source: text(material.origen || material.source) || "manual",
+    external_id: text(material.externalId || material.softlandId || material.codigoSoftland),
+    metadata: metadataWithout(material, ["id","codigo","sku","nombre","name","descripcion","unidad","unit","costoUnitario","precioUnitario","costo","unitCost","stockActual","stock","existencia","origen","source","externalId","softlandId","codigoSoftland"]),
+    created_at: iso(material.createdAt),
+    updated_at: iso(material.updatedAt || material.createdAt),
+  }));
+}
+
+function buildTechnicians({ companyId, tecnicos }) {
+  return toArray(tecnicos).map((tecnico, index) => ({
+    id: rowId(tecnico, "technician", index),
+    company_id: companyId,
+    full_name: text(tecnico.nombre || tecnico.fullName) || "Técnico sin nombre",
+    status: tecnico.activo === false ? "Inactivo" : normalizeStatus(tecnico.estado || tecnico.status, "Activo"),
+    hourly_cost: money(tecnico.costoHora || tecnico.hourlyCost),
+    metadata: metadataWithout(tecnico, ["id","nombre","fullName","activo","estado","status","costoHora","hourlyCost"]),
+    created_at: iso(tecnico.createdAt),
+    updated_at: iso(tecnico.updatedAt || tecnico.createdAt),
+  }));
+}
+
+function buildContractors({ companyId, contratistas }) {
+  return toArray(contratistas).map((contratista, index) => ({
+    id: rowId(contratista, "contractor", index),
+    company_id: companyId,
+    name: text(contratista.nombre || contratista.name || contratista.razonSocial) || "Contratista sin nombre",
+    status: contratista.activo === false ? "Inactivo" : normalizeStatus(contratista.estado || contratista.status, "Activo"),
+    hourly_cost: money(contratista.costoHora || contratista.hourlyCost),
+    metadata: metadataWithout(contratista, ["id","nombre","name","razonSocial","activo","estado","status","costoHora","hourlyCost"]),
+    created_at: iso(contratista.createdAt),
+    updated_at: iso(contratista.updatedAt || contratista.createdAt),
+  }));
+}
+
+function buildMaterialRequests({ companyId, proyectos }) {
+  return toArray(proyectos).flatMap((proyecto) => toArray(proyecto.solicitudesMaterial).map((solicitud, index) => ({
+    id: rowId(solicitud, `matreq-${proyecto.id || "project"}`, index),
+    company_id: companyId,
+    project_id: text(proyecto.id) || null,
+    requested_by: uuidOrNull(solicitud.requestedBy || solicitud.usuarioId),
+    technician_id: text(solicitud.tecnicoId) || null,
+    status: normalizeStatus(solicitud.estado || solicitud.status, "pendiente"),
+    priority: normalizeStatus(solicitud.prioridad || solicitud.priority, "Normal"),
+    requested_at: iso(solicitud.fecha || solicitud.requestedAt),
+    approved_at: text(solicitud.approvedAt) || null,
+    delivered_at: text(solicitud.deliveredAt || solicitud.fechaEntrega) || null,
+    rejected_at: text(solicitud.rejectedAt) || null,
+    notes: text(solicitud.notas || solicitud.observaciones),
+    source: text(solicitud.origen || solicitud.source) || "mobile",
+    metadata: metadataWithout(solicitud, ["id","requestedBy","usuarioId","tecnicoId","estado","status","prioridad","priority","fecha","requestedAt","approvedAt","deliveredAt","fechaEntrega","rejectedAt","notas","observaciones","origen","source","items"]),
+    created_at: iso(solicitud.createdAt || solicitud.fecha),
+    updated_at: iso(solicitud.updatedAt || solicitud.createdAt || solicitud.fecha),
+  })));
+}
+
+function buildMaterialRequestItems({ companyId, proyectos }) {
+  return toArray(proyectos).flatMap((proyecto) => toArray(proyecto.solicitudesMaterial).flatMap((solicitud, solicitudIndex) => {
+    const requestId = rowId(solicitud, `matreq-${proyecto.id || "project"}`, solicitudIndex);
+    return toArray(solicitud.items).map((item, index) => ({
+      id: rowId(item, `matitem-${requestId}`, index),
+      company_id: companyId,
+      material_request_id: requestId,
+      material_id: text(item.materialId || item.idMaterial) || null,
+      description: text(item.nombre || item.descripcion || item.name) || "Material solicitado",
+      quantity: money(item.cantidad || item.quantity) || 1,
+      unit: text(item.unidad || item.unit),
+      unit_cost: money(item.costoUnitario || item.unitCost || item.precioUnitario),
+      delivered_quantity: money(item.cantidadEntregada || item.deliveredQuantity),
+      metadata: metadataWithout(item, ["id","materialId","idMaterial","nombre","descripcion","name","cantidad","quantity","unidad","unit","costoUnitario","unitCost","precioUnitario","cantidadEntregada","deliveredQuantity"]),
+      created_at: iso(item.createdAt || solicitud.createdAt || solicitud.fecha),
+      updated_at: iso(item.updatedAt || item.createdAt || solicitud.updatedAt || solicitud.fecha),
+    }));
+  }));
+}
+
+function buildTimeEntries({ companyId, horas }) {
+  return toArray(horas).map((hora, index) => ({
+    id: rowId(hora, "time", index),
+    company_id: companyId,
+    project_id: text(hora.proyectoId || hora.projectId) || null,
+    profile_id: uuidOrNull(hora.profileId || hora.usuarioId),
+    technician_id: text(hora.tecnicoId || hora.technicianId) || null,
+    entry_date: dateOnly(hora.fecha || hora.entryDate) || new Date().toISOString().slice(0, 10),
+    hours: money(hora.horas || hora.hours),
+    cost: money(hora.costo || hora.total || hora.cost),
+    status: normalizeStatus(hora.estado || hora.status, "Pendiente"),
+    metadata: metadataWithout(hora, ["id","proyectoId","projectId","profileId","usuarioId","tecnicoId","technicianId","fecha","entryDate","horas","hours","costo","total","cost","estado","status"]),
+    created_at: iso(hora.createdAt),
+    updated_at: iso(hora.updatedAt || hora.createdAt),
+  }));
+}
+
+function buildFieldClockEvents({ companyId, fichajes }) {
+  return toArray(fichajes).map((fichaje, index) => ({
+    id: rowId(fichaje, "clock", index),
+    company_id: companyId,
+    project_id: text(fichaje.proyectoId || fichaje.projectId) || null,
+    profile_id: uuidOrNull(fichaje.profileId || fichaje.usuarioId),
+    event_type: text(fichaje.tipo || fichaje.eventType || fichaje.accion) || "fichaje",
+    event_at: iso(fichaje.fecha || fichaje.eventAt),
+    latitude: money(fichaje.lat || fichaje.latitude),
+    longitude: money(fichaje.lng || fichaje.longitude),
+    metadata: metadataWithout(fichaje, ["id","proyectoId","projectId","profileId","usuarioId","tipo","eventType","accion","fecha","eventAt","lat","latitude","lng","longitude"]),
+    created_at: iso(fichaje.createdAt || fichaje.fecha),
+  }));
+}
+
+function buildIncidents({ companyId, incidencias }) {
+  return toArray(incidencias).map((incidencia, index) => ({
+    id: rowId(incidencia, "incident", index),
+    company_id: companyId,
+    project_id: text(incidencia.proyectoId || incidencia.projectId) || null,
+    client_id: text(incidencia.clienteId || incidencia.clientId) || null,
+    title: text(incidencia.titulo || incidencia.title || incidencia.descripcion) || "Incidencia sin título",
+    severity: normalizeStatus(incidencia.severidad || incidencia.prioridad || incidencia.severity, "Media"),
+    status: normalizeStatus(incidencia.estado || incidencia.status, "Abierta"),
+    metadata: metadataWithout(incidencia, ["id","proyectoId","projectId","clienteId","clientId","titulo","title","descripcion","severidad","prioridad","severity","estado","status"]),
+    created_at: iso(incidencia.createdAt || incidencia.fecha),
+    updated_at: iso(incidencia.updatedAt || incidencia.createdAt || incidencia.fecha),
+  }));
+}
+
+function buildExpenses({ companyId, gastos }) {
+  return toArray(gastos).map((gasto, index) => ({
+    id: rowId(gasto, "expense", index),
+    company_id: companyId,
+    project_id: text(gasto.proyectoId || gasto.projectId) || null,
+    category: text(gasto.categoria || gasto.tipo || gasto.category) || "Gasto",
+    description: text(gasto.descripcion || gasto.description),
+    expense_date: dateOnly(gasto.fecha || gasto.expenseDate),
+    amount: money(gasto.monto || gasto.amount),
+    recurring: Boolean(gasto.recurrente || gasto.recurring),
+    source: text(gasto.origen || gasto.source) || "manual",
+    external_id: text(gasto.externalId || gasto.softlandId),
+    metadata: metadataWithout(gasto, ["id","proyectoId","projectId","categoria","tipo","category","descripcion","description","fecha","expenseDate","monto","amount","recurrente","recurring","origen","source","externalId","softlandId"]),
+    created_at: iso(gasto.createdAt),
+    updated_at: iso(gasto.updatedAt || gasto.createdAt),
+  }));
+}
+
+function buildBillingMilestones({ companyId, proyectos }) {
+  return toArray(proyectos).flatMap((proyecto) => toArray(proyecto.hitosFacturacion).map((hito, index) => ({
+    id: rowId(hito, `milestone-${proyecto.id || "project"}`, index),
+    company_id: companyId,
+    project_id: text(proyecto.id) || null,
+    name: text(hito.nombre || hito.name) || "Hito de facturación",
+    amount: money(hito.monto || hito.amount),
+    percent: money(hito.pct || hito.percent),
+    status: normalizeStatus(hito.estado || hito.status, "Pendiente"),
+    due_date: dateOnly(hito.fecha || hito.fechaVencimiento || hito.dueDate),
+    invoice_id: text(hito.facturaId || hito.invoiceId) || null,
+    metadata: metadataWithout(hito, ["id","nombre","name","monto","amount","pct","percent","estado","status","fecha","fechaVencimiento","dueDate","facturaId","invoiceId"]),
+    created_at: iso(hito.createdAt),
+    updated_at: iso(hito.updatedAt || hito.createdAt),
+  })));
+}
+
+function buildMonitoringProtocols({ companyId, serviciosRecurrentes }) {
+  return toArray(serviciosRecurrentes).map((servicio, index) => ({
+    id: text(servicio.protocoloId) || `protocol-${rowId(servicio, "service", index)}`,
+    company_id: companyId,
+    recurring_service_id: text(servicio.id) || null,
+    site_id: text(servicio.instalacionId) || null,
+    schedule: text(servicio.horario || servicio.schedule),
+    instructions: text(servicio.instrucciones || servicio.instructions),
+    status: servicio.protocoloCompleto === false ? "Incompleto" : normalizeStatus(servicio.protocoloEstado || servicio.protocolStatus, "Incompleto"),
+    metadata: metadataWithout(servicio.protocolo || {}, []),
+    created_at: iso(servicio.createdAt),
+    updated_at: iso(servicio.updatedAt || servicio.createdAt),
+  })).filter((row) => row.recurring_service_id);
+}
+
+function buildServiceContacts({ companyId, serviciosRecurrentes }) {
+  return toArray(serviciosRecurrentes).flatMap((servicio) => toArray(servicio.contactos).map((contacto, index) => ({
+    id: rowId(contacto, `service-contact-${servicio.id || "service"}`, index),
+    company_id: companyId,
+    recurring_service_id: text(servicio.id) || null,
+    name: text(contacto.nombre || contacto.name) || "Contacto sin nombre",
+    phone: text(contacto.telefono || contacto.phone),
+    email: text(contacto.email || contacto.correo),
+    role: text(contacto.rol || contacto.role),
+    priority: money(contacto.prioridad || contacto.priority) || index + 1,
+    metadata: metadataWithout(contacto, ["id","nombre","name","telefono","phone","email","correo","rol","role","prioridad","priority"]),
+    created_at: iso(contacto.createdAt || servicio.createdAt),
+  }))).filter((row) => row.recurring_service_id);
+}
+
+function buildServiceEvents({ companyId, eventosServicio }) {
+  return toArray(eventosServicio).map((evento, index) => ({
+    id: rowId(evento, "service-event", index),
+    company_id: companyId,
+    recurring_service_id: text(evento.servicioId || evento.recurringServiceId) || null,
+    event_type: text(evento.tipo || evento.eventType) || "evento",
+    severity: normalizeStatus(evento.severidad || evento.severity, "Normal"),
+    status: normalizeStatus(evento.estado || evento.status, "Abierto"),
+    event_date: iso(evento.fecha || evento.eventDate),
+    description: text(evento.descripcion || evento.description),
+    metadata: metadataWithout(evento, ["id","servicioId","recurringServiceId","tipo","eventType","severidad","severity","estado","status","fecha","eventDate","descripcion","description"]),
+    created_at: iso(evento.createdAt || evento.fecha),
+    updated_at: iso(evento.updatedAt || evento.createdAt || evento.fecha),
+  }));
+}
+
+function buildServiceBillingExpectations({ companyId, serviceBillingExpectations }) {
+  return toArray(serviceBillingExpectations).map((expectation, index) => ({
+    id: rowId(expectation, "billing-exp", index),
+    company_id: companyId,
+    recurring_service_id: text(expectation.servicioId || expectation.recurringServiceId) || null,
+    client_id: text(expectation.clienteId || expectation.clientId) || null,
+    expected_month: dateOnly(expectation.expectedMonth || expectation.mes || expectation.periodo) || new Date().toISOString().slice(0, 10),
+    expected_amount: money(expectation.expectedAmount || expectation.montoEsperado || expectation.monto),
+    status: normalizeStatus(expectation.status || expectation.estado, "Esperada"),
+    invoice_id: text(expectation.facturaId || expectation.invoiceId) || null,
+    metadata: metadataWithout(expectation, ["id","servicioId","recurringServiceId","clienteId","clientId","expectedMonth","mes","periodo","expectedAmount","montoEsperado","monto","status","estado","facturaId","invoiceId"]),
+    created_at: iso(expectation.createdAt),
+    updated_at: iso(expectation.updatedAt || expectation.createdAt),
+  }));
+}
+
 export function buildSupabaseSeedPayload(data = {}, options = {}) {
   const companyId = options.companyId || DEFAULT_COMPANY_ID;
   const payload = {
     companies: [{ id: companyId, name: options.companyName || "ASSUR Chile", rut: options.companyRut || null }],
     clients: buildClients({ companyId, clientes: data.clientes }),
     sites: buildSites({ companyId, instalaciones: data.instalaciones }),
+    materials: buildMaterials({ companyId, materiales: data.materiales }),
+    technicians: buildTechnicians({ companyId, tecnicos: data.tecnicos }),
+    contractors: buildContractors({ companyId, contratistas: data.contratistas }),
     opportunities: buildOpportunities({ companyId, oportunidades: data.oportunidades }),
     proposals: buildProposals({ companyId, propuestas: data.propuestas }),
     quotes: buildQuotes({ companyId, cotizaciones: data.cotizaciones }),
@@ -401,7 +633,18 @@ export function buildSupabaseSeedPayload(data = {}, options = {}) {
     commercial_package_services: buildCommercialPackageServices({ companyId, paquetesComerciales: data.paquetesComerciales }),
     projects: buildProjects({ companyId, proyectos: data.proyectos }),
     project_tasks: buildProjectTasks({ companyId, proyectos: data.proyectos }),
+    material_requests: buildMaterialRequests({ companyId, proyectos: data.proyectos }),
+    material_request_items: buildMaterialRequestItems({ companyId, proyectos: data.proyectos }),
+    time_entries: buildTimeEntries({ companyId, horas: data.horas }),
+    field_clock_events: buildFieldClockEvents({ companyId, fichajes: data.fichajes }),
+    incidents: buildIncidents({ companyId, incidencias: data.incidencias }),
+    expenses: buildExpenses({ companyId, gastos: data.gastos }),
+    billing_milestones: buildBillingMilestones({ companyId, proyectos: data.proyectos }),
     recurring_services: buildRecurringServices({ companyId, serviciosRecurrentes: data.serviciosRecurrentes }),
+    monitoring_protocols: buildMonitoringProtocols({ companyId, serviciosRecurrentes: data.serviciosRecurrentes }),
+    service_contacts: buildServiceContacts({ companyId, serviciosRecurrentes: data.serviciosRecurrentes }),
+    service_events: buildServiceEvents({ companyId, eventosServicio: data.eventosServicio }),
+    service_billing_expectations: buildServiceBillingExpectations({ companyId, serviceBillingExpectations: data.serviceBillingExpectations }),
     invoices: buildInvoices({ companyId, facturas: data.facturas }),
     payments: buildPayments({ companyId, pagos: data.pagos, facturas: data.facturas }),
     accounts_payable: buildAccountsPayable({ companyId, cuentasPagar: data.cuentasPagar }),
@@ -417,8 +660,11 @@ function normalizeOptionalForeignKeys(payload) {
     opportunities: tableIds(payload.opportunities),
     proposals: tableIds(payload.proposals),
     quotes: tableIds(payload.quotes),
+    materials: tableIds(payload.materials),
+    technicians: tableIds(payload.technicians),
     commercial_packages: tableIds(payload.commercial_packages),
     projects: tableIds(payload.projects),
+    recurring_services: tableIds(payload.recurring_services),
     invoices: tableIds(payload.invoices),
   };
   const clearMissing = (rows, field, allowed) => toArray(rows).map((row) => {
@@ -432,11 +678,22 @@ function normalizeOptionalForeignKeys(payload) {
     opportunities: clearMissing(clearMissing(payload.opportunities, "client_id", ids.clients), "site_id", ids.sites),
     proposals: clearMissing(clearMissing(clearMissing(payload.proposals, "client_id", ids.clients), "site_id", ids.sites), "opportunity_id", ids.opportunities),
     quotes: clearMissing(clearMissing(clearMissing(payload.quotes, "client_id", ids.clients), "site_id", ids.sites), "proposal_id", ids.proposals),
-    commercial_package_items: clearMissing(clearMissing(payload.commercial_package_items, "package_id", ids.commercial_packages), "material_id", tableIds(payload.materials)),
+    commercial_package_items: clearMissing(clearMissing(payload.commercial_package_items, "package_id", ids.commercial_packages), "material_id", ids.materials),
     commercial_package_services: clearMissing(payload.commercial_package_services, "package_id", ids.commercial_packages),
     projects: clearMissing(clearMissing(clearMissing(payload.projects, "client_id", ids.clients), "site_id", ids.sites), "proposal_id", ids.proposals),
     project_tasks: clearMissing(payload.project_tasks, "project_id", ids.projects),
+    material_requests: clearMissing(clearMissing(payload.material_requests, "project_id", ids.projects), "technician_id", ids.technicians),
+    material_request_items: clearMissing(clearMissing(payload.material_request_items, "material_request_id", tableIds(payload.material_requests)), "material_id", ids.materials),
+    time_entries: clearMissing(clearMissing(payload.time_entries, "project_id", ids.projects), "technician_id", ids.technicians),
+    field_clock_events: clearMissing(payload.field_clock_events, "project_id", ids.projects),
+    incidents: clearMissing(clearMissing(payload.incidents, "project_id", ids.projects), "client_id", ids.clients),
+    expenses: clearMissing(payload.expenses, "project_id", ids.projects),
+    billing_milestones: clearMissing(clearMissing(payload.billing_milestones, "project_id", ids.projects), "invoice_id", ids.invoices),
     recurring_services: clearMissing(clearMissing(clearMissing(clearMissing(payload.recurring_services, "client_id", ids.clients), "site_id", ids.sites), "project_id", ids.projects), "proposal_id", ids.proposals),
+    monitoring_protocols: clearMissing(clearMissing(payload.monitoring_protocols, "recurring_service_id", ids.recurring_services), "site_id", ids.sites),
+    service_contacts: clearMissing(payload.service_contacts, "recurring_service_id", ids.recurring_services),
+    service_events: clearMissing(payload.service_events, "recurring_service_id", ids.recurring_services),
+    service_billing_expectations: clearMissing(clearMissing(clearMissing(payload.service_billing_expectations, "recurring_service_id", ids.recurring_services), "client_id", ids.clients), "invoice_id", ids.invoices),
     invoices: clearMissing(clearMissing(payload.invoices, "client_id", ids.clients), "project_id", ids.projects),
     payments: clearMissing(payload.payments, "invoice_id", ids.invoices),
     accounts_payable: clearMissing(payload.accounts_payable, "project_id", ids.projects),

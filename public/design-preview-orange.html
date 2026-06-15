@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NEXO - Maqueta alternativa naranja</title>
+    <style>
+      :root {
+        --graphite-950: #101418;
+        --graphite-900: #151b21;
+        --graphite-850: #1d252d;
+        --graphite-800: #26313a;
+        --orange-700: #c85f1f;
+        --orange-600: #e17327;
+        --orange-500: #f58a34;
+        --orange-100: #fff0e5;
+        --orange-050: #fff7f0;
+        --blue-700: #1b5f86;
+        --green-700: #1f8a55;
+        --green-100: #e9f7f0;
+        --red-700: #c9473c;
+        --red-100: #ffeceb;
+        --amber-700: #b58112;
+        --amber-100: #fff6db;
+        --ink-900: #172436;
+        --ink-700: #334155;
+        --ink-500: #64748b;
+        --ink-300: #9aa8b8;
+        --line: #dde4ec;
+        --line-strong: #c7d2df;
+        --canvas: #f5f6f8;
+        --panel: #ffffff;
+        --soft: #f9fafb;
+        --radius: 8px;
+        --shadow: 0 18px 44px rgba(23, 36, 54, 0.09);
+        --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --text-xs: 11px;
+        --text-sm: 13px;
+        --text-md: 14px;
+        --text-lg: 16px;
+        --text-xl: 18px;
+        --text-title: 28px;
+        --text-kpi: 27px;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink-900);
+        font-family: var(--font);
+        font-size: var(--text-md);
+        line-height: 1.46;
+      }
+
+      .preview-nav {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 68px;
+        padding: 0 28px;
+        background: #ffffff;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand-mini {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand-mini img {
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
+      }
+      .brand-mini strong {
+        display: block;
+        font-size: 18px;
+        letter-spacing: .16em;
+        line-height: 1;
+      }
+      .wordmark-nexo {
+        display: block;
+        font-size: 24px;
+        font-weight: 950;
+        letter-spacing: .2em;
+        line-height: .92;
+        transform: scaleX(1.06);
+        transform-origin: left center;
+      }
+      .brand-mini .wordmark-nexo {
+        color: var(--orange-700);
+      }
+      .brand-mini span {
+        display: block;
+        margin-top: 5px;
+        color: var(--ink-500);
+        font-size: 7.5px;
+        font-weight: 500;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+
+      .preview-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .preview-actions a {
+        padding: 8px 11px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        color: var(--ink-700);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: .05em;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+      .preview-actions a.active {
+        background: var(--orange-100);
+        border-color: #f2c39e;
+        color: var(--orange-700);
+      }
+
+      .intro {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 30px 28px 22px;
+      }
+      .intro h1 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.1;
+      }
+      .intro p {
+        max-width: 880px;
+        margin: 10px 0 0;
+        color: var(--ink-500);
+        font-size: 14px;
+      }
+      .name-options {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+        max-width: 980px;
+      }
+      .name-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 13px 14px;
+      }
+      .name-card.selected {
+        border-color: #efb17f;
+        background: var(--orange-050);
+      }
+      .name-card strong {
+        display: block;
+        font-size: 16px;
+        letter-spacing: .08em;
+      }
+      .name-card span {
+        display: block;
+        margin-top: 4px;
+        color: var(--ink-500);
+        font-size: 12px;
+      }
+
+      .mock-section {
+        max-width: 1480px;
+        margin: 0 auto 54px;
+        padding: 0 28px;
+      }
+      .section-label {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 8px 0 14px;
+      }
+      .section-label h2 {
+        margin: 0;
+        font-size: 21px;
+      }
+      .section-label p {
+        max-width: 720px;
+        margin: 0;
+        color: var(--ink-500);
+      }
+
+      .desktop-frame,
+      .phone-frame {
+        overflow: hidden;
+        border: 1px solid var(--line-strong);
+        border-radius: 20px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+      .app-desktop {
+        display: grid;
+        grid-template-columns: 238px 1fr;
+        min-height: 930px;
+        background: var(--canvas);
+      }
+
+      .sidebar {
+        background: var(--graphite-950);
+        color: #dbe4ed;
+        padding: 24px 16px;
+      }
+      .side-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 10px 22px;
+        margin-bottom: 22px;
+        border-bottom: 1px solid #2b3540;
+      }
+      .side-brand img {
+        width: 38px;
+        height: 38px;
+      }
+      .side-brand strong {
+        color: #ffffff;
+        display: block;
+        font-size: 19px;
+        line-height: 1;
+        letter-spacing: .16em;
+      }
+      .side-brand .wordmark-nexo {
+        color: #ffffff;
+        font-size: 24px;
+        letter-spacing: .2em;
+      }
+      .side-brand span {
+        color: #d8bda8;
+        display: block;
+        margin-top: 5px;
+        font-size: 7px;
+        font-weight: 500;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .side-kicker {
+        padding: 0 10px;
+        color: #8fa0b2;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+      .side-title {
+        padding: 6px 10px 18px;
+        color: #f8fbff;
+        font-size: 20px;
+        font-weight: 900;
+        border-bottom: 1px solid #2b3540;
+        margin-bottom: 18px;
+      }
+      .nav-group {
+        margin-bottom: 16px;
+      }
+      .nav-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 11px;
+        border-radius: var(--radius);
+        color: #f4f7fb;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .nav-heading.active {
+        background: #ffffff12;
+      }
+      .nav-heading i {
+        width: 26px;
+        height: 26px;
+        display: inline-grid;
+        place-items: center;
+        border-radius: 8px;
+        background: #ffffff12;
+        color: #f4b177;
+        font-style: normal;
+      }
+      .nav-link {
+        position: relative;
+        display: block;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: #b8c8db;
+        text-align: left;
+        padding: 10px 10px 10px 33px;
+        border-radius: var(--radius);
+        font-size: 13px;
+        font-weight: 760;
+      }
+      .nav-link.selected {
+        background: #ffffff16;
+        color: #ffffff;
+      }
+      .nav-link.selected:before {
+        content: "";
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--orange-500);
+        transform: translateY(-50%);
+      }
+
+      .main {
+        min-width: 0;
+      }
+      .topbar {
+        min-height: 76px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 26px;
+        background: var(--graphite-900);
+        border-bottom: 1px solid #2d3944;
+        color: #f8fbff;
+      }
+      .search {
+        flex: 1;
+        max-width: 520px;
+        min-width: 260px;
+        margin-left: auto;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 14px;
+        border: 1px solid #3a4856;
+        border-radius: 9px;
+        color: #96a7b8;
+        background: #111920;
+        font-size: 13px;
+      }
+      .pill {
+        min-width: 96px;
+        padding: 8px 12px;
+        border-radius: 9px;
+        background: #111920;
+        border: 1px solid #3a4856;
+        text-align: center;
+      }
+      .pill span {
+        display: block;
+        color: #98a8b8;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .12em;
+      }
+      .pill strong {
+        display: block;
+        color: #f8fbff;
+        font-size: 14px;
+        margin-top: 1px;
+      }
+      .user {
+        min-width: 144px;
+        text-align: right;
+      }
+      .user strong {
+        display: block;
+        font-size: 15px;
+      }
+      .user span {
+        display: block;
+        color: #f5b174;
+        font-size: 10.5px;
+        font-weight: 800;
+      }
+
+      .content {
+        padding: 28px;
+      }
+      .page-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 20px;
+      }
+      .eyebrow {
+        color: var(--orange-700);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+      .page-head h2 {
+        margin: 6px 0 6px;
+        font-size: var(--text-title);
+        line-height: 1.08;
+      }
+      .page-head p {
+        margin: 0;
+        color: var(--ink-500);
+        font-size: 13.5px;
+      }
+      .primary-action {
+        align-self: flex-start;
+        border: 0;
+        border-radius: var(--radius);
+        background: var(--orange-600);
+        color: white;
+        padding: 11px 14px;
+        font-weight: 900;
+        font-size: 12px;
+        letter-spacing: .045em;
+        text-transform: uppercase;
+        box-shadow: 0 12px 24px rgba(225, 115, 39, .22);
+      }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .card,
+      .kpi {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: 0 10px 28px rgba(23, 36, 54, .045);
+      }
+      .kpi {
+        min-height: 132px;
+        padding: 17px 18px;
+      }
+      .kpi span {
+        display: block;
+        color: var(--ink-500);
+        min-height: 32px;
+        font-size: 10.5px;
+        font-weight: 900;
+        letter-spacing: .085em;
+        line-height: 1.32;
+        text-transform: uppercase;
+      }
+      .kpi strong {
+        display: block;
+        margin-top: 9px;
+        color: var(--ink-900);
+        font-size: var(--text-kpi);
+        line-height: 1.04;
+      }
+      .kpi small {
+        display: block;
+        margin-top: 9px;
+        color: var(--ink-500);
+        font-size: 12.5px;
+      }
+
+      .work-grid {
+        display: grid;
+        grid-template-columns: 1.2fr .8fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .card {
+        padding: 18px;
+      }
+      .card h3 {
+        margin: 0 0 14px;
+        color: var(--ink-900);
+        font-size: 17px;
+        line-height: 1.22;
+      }
+      .section-title {
+        color: var(--orange-700);
+        font-size: 10.5px;
+        font-weight: 900;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .queue-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--soft);
+        margin-bottom: 8px;
+      }
+      .queue-item strong {
+        display: block;
+        font-size: 13.5px;
+        line-height: 1.25;
+      }
+      .queue-item span {
+        color: var(--ink-500);
+        font-size: 12px;
+        line-height: 1.28;
+      }
+      .status {
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+      }
+      .status.orange { background: var(--orange-100); color: var(--orange-700); }
+      .status.green { background: var(--green-100); color: var(--green-700); }
+      .status.red { background: var(--red-100); color: var(--red-700); }
+      .status.amber { background: var(--amber-100); color: var(--amber-700); }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+      }
+      .table th {
+        text-align: left;
+        color: var(--ink-500);
+        font-size: 9.5px;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+      .table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+      .table tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .phone-wrap {
+        display: grid;
+        grid-template-columns: 390px 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .phone {
+        width: 390px;
+        min-height: 760px;
+        background: var(--canvas);
+      }
+      .phone-head {
+        background: var(--graphite-900);
+        color: white;
+        padding: 18px 16px;
+      }
+      .phone-brand {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+      .phone-brand img { width: 30px; height: 30px; }
+      .sync { color: #f5b174; font-size: 11px; font-weight: 850; }
+      .phone-head h3 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .phone-head p {
+        margin: 4px 0 0;
+        color: #aebccb;
+      }
+      .phone-body {
+        padding: 14px;
+      }
+      .mobile-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 15px;
+        margin-bottom: 12px;
+      }
+      .mobile-action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .mobile-action {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: white;
+        padding: 14px 12px;
+        text-align: left;
+        font-weight: 900;
+        color: var(--ink-900);
+      }
+      .mobile-action i {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        margin-bottom: 8px;
+        border-radius: 10px;
+        background: var(--orange-100);
+        color: var(--orange-700);
+        font-style: normal;
+      }
+
+      .light-shell .app-desktop {
+        background: #f7f8fa;
+      }
+      .light-shell .sidebar {
+        background:
+          radial-gradient(circle at 22% 0, rgba(255,255,255,.22), transparent 30%),
+          linear-gradient(180deg, #b9541a 0%, #d86923 46%, #9f4615 100%);
+        color: #fff7ef;
+        border-right: 1px solid #9f4615;
+        position: relative;
+      }
+      .light-shell .sidebar:before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(255,255,255,.1), transparent 38%),
+          linear-gradient(180deg, rgba(255,255,255,.08), transparent 180px);
+        pointer-events: none;
+      }
+      .light-shell .side-brand {
+        position: relative;
+        margin: -2px -4px 22px;
+        padding: 18px 12px 20px;
+        border-bottom-color: rgba(255,255,255,.25);
+        background: rgba(255,255,255,.08);
+        border-radius: 0 0 16px 16px;
+      }
+      .light-shell .side-brand strong {
+        color: #ffffff;
+      }
+      .light-shell .side-brand span {
+        color: rgba(255,255,255,.68);
+      }
+      .light-shell .side-kicker {
+        color: rgba(255,255,255,.72);
+      }
+      .light-shell .side-title {
+        color: #ffffff;
+        border-bottom-color: rgba(255,255,255,.22);
+      }
+      .light-shell .nav-heading {
+        color: rgba(255,255,255,.82);
+        border: 1px solid transparent;
+      }
+      .light-shell .nav-heading.active {
+        background: rgba(255,255,255,.18);
+        border-color: rgba(255,255,255,.22);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 10px 22px rgba(100, 35, 7, .16);
+        color: #ffffff;
+      }
+      .light-shell .nav-heading.active i {
+        background: rgba(255,255,255,.2);
+        color: #ffffff;
+      }
+      .light-shell .nav-heading:not(.active):hover {
+        background: rgba(255,255,255,.12);
+        color: #ffffff;
+      }
+      .light-shell .nav-heading i {
+        background: rgba(255,255,255,.16);
+        color: #ffffff;
+      }
+      .light-shell .nav-link {
+        color: rgba(255,255,255,.72);
+      }
+      .light-shell .nav-link.selected {
+        background: rgba(255,255,255,.16);
+        color: #ffffff;
+        box-shadow: inset 3px 0 0 #ffffff;
+      }
+      .light-shell .topbar {
+        background:
+          radial-gradient(circle at 18% -40%, rgba(255,255,255,.28), transparent 28%),
+          linear-gradient(135deg, #a94b17 0%, #d96d24 52%, #f58a34 100%);
+        border-bottom: 1px solid #a94b17;
+        color: #ffffff;
+        box-shadow: 0 14px 28px rgba(185, 84, 26, .18);
+      }
+      .light-shell .search {
+        background: rgba(255,255,255,.18);
+        border-color: rgba(255,255,255,.36);
+        color: #fff8f2;
+      }
+      .light-shell .pill {
+        background: rgba(255,255,255,.16);
+        border-color: rgba(255,255,255,.34);
+      }
+      .light-shell .pill span {
+        color: #ffe3cd;
+      }
+      .light-shell .pill strong {
+        color: #ffffff;
+      }
+      .light-shell .user strong {
+        color: #ffffff;
+      }
+      .light-shell .user span {
+        color: #ffe3cd;
+      }
+      .light-shell .eyebrow,
+      .light-shell .section-title {
+        color: var(--orange-700);
+      }
+      .light-shell .primary-action {
+        background: linear-gradient(135deg, #b9541a, #f58a34);
+        color: #ffffff;
+        box-shadow: 0 14px 26px rgba(200, 95, 31, .24);
+      }
+
+      @media (max-width: 980px) {
+        .topbar { flex-wrap: wrap; height: auto; padding: 14px; }
+        .search { order: 5; max-width: none; width: 100%; margin: 0; }
+        .kpi-grid, .work-grid { grid-template-columns: 1fr 1fr; }
+        .phone-wrap { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 680px) {
+        .preview-nav, .intro, .mock-section { padding-left: 16px; padding-right: 16px; }
+        .name-options, .kpi-grid, .work-grid { grid-template-columns: 1fr; }
+        .desktop-frame { border-radius: 14px; }
+        .app-desktop { display: block; }
+        .sidebar { display: none; }
+        .content { padding: 18px 14px; }
+        .page-head { display: block; }
+        .primary-action { margin-top: 12px; }
+        .phone, .phone-wrap { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="preview-nav">
+      <div class="brand-mini">
+        <img src="/brand/assur-hex-solid-orange.svg" alt="Logo ASSUR" />
+        <div>
+          <strong class="wordmark-nexo">NEXO</strong>
+          <span>por ASSUR</span>
+        </div>
+      </div>
+      <div class="preview-actions">
+        <a class="active" href="#desktop">Naranjo</a>
+        <a href="#claro">Claro</a>
+        <a href="#nombres">Nombres</a>
+        <a href="#mobile">Técnico</a>
+      </div>
+    </nav>
+
+    <section class="intro" id="nombres">
+      <h1>Maqueta alternativa: logo ASSUR como marca madre, sistema con nombre propio.</h1>
+      <p>
+        La idea es que ASSUR quede como respaldo visual mediante el isotipo, mientras el software toma un nombre funcional. Esta variante usa naranjo como color de accion y energia operativa, con grafito para dar seriedad y menos dependencia del azul.
+      </p>
+      <div class="name-options">
+        <div class="name-card selected">
+          <strong>NEXO</strong>
+          <span>Conecta comercial, operaciones, terreno, monitoreo y finanzas. Es corto y facil de recordar.</span>
+        </div>
+        <div class="name-card">
+          <strong>PULSO</strong>
+          <span>Enfatiza salud del negocio, alertas, caja, MRR y avance operacional en tiempo real.</span>
+        </div>
+        <div class="name-card">
+          <strong>ÓRBITA</strong>
+          <span>Da sensacion de centro de control donde todas las areas giran ordenadamente.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="mock-section" id="desktop">
+      <div class="section-label">
+        <div>
+          <h2>Desktop ejecutivo y operativo</h2>
+          <p>El naranjo queda reservado para accion, foco y estado operativo. El logo de ASSUR aparece solo como isotipo; el nombre visible del sistema es NEXO.</p>
+        </div>
+      </div>
+      <div class="desktop-frame">
+        <div class="app-desktop">
+          <aside class="sidebar">
+            <div class="side-brand">
+              <img src="/brand/assur-hex-solid-whiteOnDark.svg" alt="Logo ASSUR" />
+              <div><strong class="wordmark-nexo">NEXO</strong><span>por ASSUR</span></div>
+            </div>
+            <div class="side-kicker">Mesa activa</div>
+            <div class="side-title">Operaciones</div>
+            <div class="nav-group">
+              <div class="nav-heading active"><i>01</i><span>Inicio</span></div>
+              <button class="nav-link selected">Panel diario</button>
+              <button class="nav-link">Alertas</button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-heading"><i>02</i><span>Comercial</span></div>
+              <button class="nav-link">Contactos</button>
+              <button class="nav-link">Pedir cotizacion</button>
+              <button class="nav-link">Pipeline</button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-heading"><i>03</i><span>Cotizaciones</span></div>
+              <button class="nav-link">Por preparar</button>
+              <button class="nav-link">Paquetes</button>
+              <button class="nav-link">Propuestas</button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-heading"><i>04</i><span>Finanzas</span></div>
+              <button class="nav-link">Cobranza</button>
+              <button class="nav-link">Caja</button>
+              <button class="nav-link">Rentabilidad</button>
+            </div>
+          </aside>
+
+          <main class="main">
+            <header class="topbar">
+              <div class="search">Buscar cliente, proyecto, cotizacion o factura...</div>
+              <div class="pill"><span>UF</span><strong>$ 40.374</strong></div>
+              <div class="pill"><span>USD</span><strong>$ 907</strong></div>
+              <div class="user"><strong>Administrador</strong><span>Gerencia</span></div>
+            </header>
+
+            <section class="content">
+              <div class="page-head">
+                <div>
+                  <div class="eyebrow">Panel diario</div>
+                  <h2>Buenos dias, Moisés</h2>
+                  <p>Estas son las decisiones que requieren foco hoy: cotizaciones, proyectos atrasados, cobranza y activaciones.</p>
+                </div>
+                <button class="primary-action">Nueva accion</button>
+              </div>
+
+              <div class="kpi-grid">
+                <div class="kpi"><span>Ventas aprobadas</span><strong>$18.5M</strong><small>1 proyecto aprobado</small></div>
+                <div class="kpi"><span>MRR activo</span><strong style="color:var(--green-700)">$1.45M</strong><small>$17.4M anual</small></div>
+                <div class="kpi"><span>Cotizaciones por preparar</span><strong style="color:var(--orange-700)">4</strong><small>2 con prioridad alta</small></div>
+                <div class="kpi"><span>CxC vencida</span><strong style="color:var(--red-700)">$3.8M</strong><small>requiere gestion</small></div>
+              </div>
+
+              <div class="work-grid">
+                <div class="card">
+                  <div class="section-title">Atencion hoy</div>
+                  <h3>Acciones recomendadas</h3>
+                  <div class="queue-item">
+                    <div><strong>Validar cotizacion Planta Molina</strong><span>Operaciones preparo costos; falta revision gerencial.</span></div>
+                    <span class="status orange">Hoy</span>
+                  </div>
+                  <div class="queue-item">
+                    <div><strong>Cierre tecnico con servicio recurrente</strong><span>Proyecto listo para activar monitoreo y protocolo.</span></div>
+                    <span class="status green">Listo</span>
+                  </div>
+                  <div class="queue-item">
+                    <div><strong>Factura vencida cliente industrial</strong><span>Saldo pendiente conciliable con Softland.</span></div>
+                    <span class="status red">Riesgo</span>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="section-title">Flujo operativo</div>
+                  <h3>Estados clave</h3>
+                  <table class="table">
+                    <tbody>
+                      <tr><td>Solicitudes comerciales</td><td><span class="status amber">6 abiertas</span></td></tr>
+                      <tr><td>Cotizaciones operaciones</td><td><span class="status orange">4 en curso</span></td></tr>
+                      <tr><td>Proyectos en terreno</td><td><span class="status green">3 activos</span></td></tr>
+                      <tr><td>Servicios en activacion</td><td><span class="status orange">2 pendientes</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="section-title">Trabajo de operaciones</div>
+                <h3>Bandeja simplificada</h3>
+                <table class="table">
+                  <thead>
+                    <tr><th>Cliente</th><th>Trabajo</th><th>Responsable</th><th>Estado</th><th>Siguiente paso</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Patagonia Fresh</td><td>Mejora tecnologica</td><td>Operaciones</td><td><span class="status orange">Costeo</span></td><td>Enviar a gerencia</td></tr>
+                    <tr><td>Viña Conosur</td><td>Monitoreo alarmas</td><td>Monitoreo</td><td><span class="status green">Activable</span></td><td>Completar protocolo</td></tr>
+                    <tr><td>Alambres Chile</td><td>Cerco electrico</td><td>Supervisor</td><td><span class="status amber">Terreno</span></td><td>Revisar evidencia</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </section>
+
+    <section class="mock-section light-shell" id="claro">
+      <div class="section-label">
+        <div>
+          <h2>Vista en color claro</h2>
+          <p>Esta variante usa una estructura clara con sidebar y cabecera naranjas: el menu queda blanco sobre color, las acciones usan un naranjo mas intenso y “por ASSUR” queda como firma secundaria fina.</p>
+        </div>
+      </div>
+      <div class="desktop-frame">
+        <div class="app-desktop">
+          <aside class="sidebar">
+            <div class="side-brand">
+              <img src="/brand/assur-hex-solid-white-on-orange.svg" alt="Logo ASSUR" />
+              <div><strong class="wordmark-nexo">NEXO</strong><span>por ASSUR</span></div>
+            </div>
+            <div class="side-kicker">Mesa activa</div>
+            <div class="side-title">Operaciones</div>
+            <div class="nav-group">
+              <div class="nav-heading active"><i>01</i><span>Inicio</span></div>
+              <button class="nav-link selected">Panel diario</button>
+              <button class="nav-link">Alertas</button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-heading"><i>02</i><span>Comercial</span></div>
+              <button class="nav-link">Contactos</button>
+              <button class="nav-link">Pedir cotizacion</button>
+              <button class="nav-link">Pipeline</button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-heading"><i>03</i><span>Cotizaciones</span></div>
+              <button class="nav-link">Por preparar</button>
+              <button class="nav-link">Paquetes</button>
+              <button class="nav-link">Propuestas</button>
+            </div>
+            <div class="nav-group">
+              <div class="nav-heading"><i>04</i><span>Finanzas</span></div>
+              <button class="nav-link">Cobranza</button>
+              <button class="nav-link">Caja</button>
+              <button class="nav-link">Rentabilidad</button>
+            </div>
+          </aside>
+
+          <main class="main">
+            <header class="topbar">
+              <div class="search">Buscar cliente, proyecto, cotizacion o factura...</div>
+              <div class="pill"><span>UF</span><strong>$ 40.374</strong></div>
+              <div class="pill"><span>USD</span><strong>$ 907</strong></div>
+              <div class="user"><strong>Administrador</strong><span>Gerencia</span></div>
+            </header>
+
+            <section class="content">
+              <div class="page-head">
+                <div>
+                  <div class="eyebrow">Panel diario</div>
+                  <h2>Buenos dias, Moisés</h2>
+                  <p>Lectura mas liviana para jornadas largas: menos contraste duro, mayor aire y estados de accion claramente naranjos.</p>
+                </div>
+                <button class="primary-action">Nueva accion</button>
+              </div>
+
+              <div class="kpi-grid">
+                <div class="kpi"><span>Ventas aprobadas</span><strong>$18.5M</strong><small>1 proyecto aprobado</small></div>
+                <div class="kpi"><span>MRR activo</span><strong style="color:var(--green-700)">$1.45M</strong><small>$17.4M anual</small></div>
+                <div class="kpi"><span>Cotizaciones por preparar</span><strong style="color:var(--orange-700)">4</strong><small>2 con prioridad alta</small></div>
+                <div class="kpi"><span>CxC vencida</span><strong style="color:var(--red-700)">$3.8M</strong><small>requiere gestion</small></div>
+              </div>
+
+              <div class="work-grid">
+                <div class="card">
+                  <div class="section-title">Atencion hoy</div>
+                  <h3>Acciones recomendadas</h3>
+                  <div class="queue-item">
+                    <div><strong>Validar cotizacion Planta Molina</strong><span>Operaciones preparo costos; falta revision gerencial.</span></div>
+                    <span class="status orange">Hoy</span>
+                  </div>
+                  <div class="queue-item">
+                    <div><strong>Cierre tecnico con servicio recurrente</strong><span>Proyecto listo para activar monitoreo y protocolo.</span></div>
+                    <span class="status green">Listo</span>
+                  </div>
+                  <div class="queue-item">
+                    <div><strong>Factura vencida cliente industrial</strong><span>Saldo pendiente conciliable con Softland.</span></div>
+                    <span class="status red">Riesgo</span>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="section-title">Flujo operativo</div>
+                  <h3>Estados clave</h3>
+                  <table class="table">
+                    <tbody>
+                      <tr><td>Solicitudes comerciales</td><td><span class="status amber">6 abiertas</span></td></tr>
+                      <tr><td>Cotizaciones operaciones</td><td><span class="status orange">4 en curso</span></td></tr>
+                      <tr><td>Proyectos en terreno</td><td><span class="status green">3 activos</span></td></tr>
+                      <tr><td>Servicios en activacion</td><td><span class="status orange">2 pendientes</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </section>
+
+    <section class="mock-section" id="mobile">
+      <div class="section-label">
+        <div>
+          <h2>Vista tecnico con la misma identidad</h2>
+          <p>El tecnico no necesita ver la marca escrita. Solo isotipo, nombre corto del sistema y acciones grandes.</p>
+        </div>
+      </div>
+      <div class="phone-wrap">
+        <div class="phone-frame">
+          <div class="phone">
+            <header class="phone-head">
+              <div class="phone-brand">
+                <img src="/brand/assur-hex-solid-whiteOnDark.svg" alt="Logo ASSUR" />
+                <span class="sync">Sincronizado</span>
+              </div>
+              <h3>Mi jornada</h3>
+              <p>Juan Perez · Jueves 4 de junio</p>
+            </header>
+            <div class="phone-body">
+              <div class="mobile-card">
+                <div class="section-title">Proyecto actual</div>
+                <h3 style="margin:0 0 8px">Mejora tecnologica</h3>
+                <p style="margin:0;color:var(--ink-500)">Planta Molina · 3 tareas pendientes</p>
+              </div>
+              <div class="mobile-action-grid">
+                <button class="mobile-action"><i>01</i>Fichar</button>
+                <button class="mobile-action"><i>02</i>Foto</button>
+                <button class="mobile-action"><i>03</i>Material</button>
+                <button class="mobile-action"><i>04</i>Incidencia</button>
+              </div>
+              <div class="mobile-card" style="margin-top:12px">
+                <div class="section-title">Siguiente tarea</div>
+                <h3 style="margin:0 0 8px">Configurar grabador NVR</h3>
+                <p style="margin:0;color:var(--ink-500)">Checklist, evidencia y cierre con firma al terminar.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">Lectura de marca</div>
+          <h3>Por que esta alternativa funciona</h3>
+          <table class="table">
+            <tbody>
+              <tr><td>ASSUR</td><td>Queda como isotipo/marca madre, sin saturar la interfaz.</td></tr>
+              <tr><td>NEXO</td><td>Comunica conexion entre areas y baja la sensacion de ERP pesado.</td></tr>
+              <tr><td>Naranjo</td><td>Sirve para accion y prioridad; no debe dominar KPIs financieros.</td></tr>
+              <tr><td>Grafito</td><td>Mantiene seriedad operacional y reduce fatiga visual.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

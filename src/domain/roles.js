@@ -2,12 +2,14 @@ import { PERMISOS_DEF } from "../config/navigation.js";
 import { repositories as repo } from "../services/repositories.js";
 
 export const ROLE_OPTIONS = [
+  { value: "gerente_general", label: "Gerente General" },
+  { value: "gerente_operaciones_admin", label: "Gerente Operaciones y Administración" },
   { value: "admin", label: "Administrador" },
   { value: "gerencia", label: "Gerencia" },
-  { value: "comercial", label: "Comercial" },
+  { value: "comercial", label: "Vendedor" },
   { value: "jefe_comercial", label: "Jefe Comercial" },
   { value: "operaciones", label: "Jefe Operaciones" },
-  { value: "administrativo_operaciones", label: "Administrativo Operaciones" },
+  { value: "administrativo_operaciones", label: "Administrador Operaciones" },
   { value: "supervisor", label: "Supervisor" },
   { value: "tecnico", label: "Técnico" },
   { value: "monitoreo", label: "Monitoreo" },
@@ -26,6 +28,13 @@ export function normalizeRole(rol = "viewer") {
     administrador: "admin",
     administracion: "admin",
     admin: "admin",
+    gerente_general: "gerente_general",
+    gerencia_general: "gerente_general",
+    general_manager: "gerente_general",
+    gerente_operaciones_admin: "gerente_operaciones_admin",
+    gerente_operaciones_administracion: "gerente_operaciones_admin",
+    gerente_operaciones_y_administracion: "gerente_operaciones_admin",
+    gerente_administracion_operaciones: "gerente_operaciones_admin",
     gerente: "gerencia",
     gerencia: "gerencia",
     direccion: "gerencia",
@@ -101,8 +110,8 @@ function mergeRolePermissions(defaults = {}, stored = {}) {
 
 export function hasPermission(permisos, rol, moduleId, action = "ver") {
   const r=normalizeRole(rol);
-  if (r === "admin") return true;
-  if (r === "tecnico") return moduleId === "mobile" && action === "ver";
+  if (r === "admin" || r === "gerente_general") return true;
+  if (r === "tecnico") return (moduleId === "mobile" || moduleId === "assistant") && action === "ver";
   if (moduleId === "config") return false;
   const value = normalizePermissionValue(permisos?.[r]?.[moduleId]);
   if (!value) return false;
@@ -112,25 +121,26 @@ export function hasPermission(permisos, rol, moduleId, action = "ver") {
 
 export function canEdit(rol,moduleId=null,action="editar",permisos=null){
   const r=normalizeRole(rol);
-  if (r === "admin") return true;
+  if (r === "admin" || r === "gerente_general") return true;
   if (!moduleId || !permisos) return !["viewer","tecnico"].includes(r);
   return hasPermission(permisos,r,moduleId,action) || hasPermission(permisos,r,moduleId,"crear");
 }
 
 export function rolLabel(rol){
   rol = normalizeRole(rol);
-  const map={admin:"Administrador",gerencia:"Gerencia",comercial:"Comercial",jefe_comercial:"Jefe Comercial",operaciones:"Jefe Operaciones",administrativo_operaciones:"Administrativo Operaciones",supervisor:"Supervisor",tecnico:"Técnico",monitoreo:"Monitoreo",finanzas:"Finanzas",almacen:"Almacén",viewer:"Visualización"};
+  const map={gerente_general:"Gerente General",gerente_operaciones_admin:"Gerente Operaciones y Administración",admin:"Administrador",gerencia:"Gerencia",comercial:"Vendedor",jefe_comercial:"Jefe Comercial",operaciones:"Jefe Operaciones",administrativo_operaciones:"Administrador Operaciones",supervisor:"Supervisor",tecnico:"Técnico",monitoreo:"Monitoreo",finanzas:"Finanzas",almacen:"Almacén",viewer:"Visualización"};
   return map[rol]||"Usuario";
 }
 
 export function rolColor(rol,C){
   rol = normalizeRole(rol);
-  const map={admin:C.blue,gerencia:C.purple,comercial:"#1B5F86",jefe_comercial:"#174F72",operaciones:C.amber,administrativo_operaciones:"#B58112",supervisor:"#7C3AED",tecnico:C.green,monitoreo:"#0891B2",finanzas:C.green,almacen:"#0891B2",viewer:C.textM};
+  const map={gerente_general:C.purple,gerente_operaciones_admin:"#B45309",admin:C.blue,gerencia:C.purple,comercial:"#1B5F86",jefe_comercial:"#174F72",operaciones:C.amber,administrativo_operaciones:"#B58112",supervisor:"#7C3AED",tecnico:C.green,monitoreo:"#0891B2",finanzas:C.green,almacen:"#0891B2",viewer:C.textM};
   return map[rol]||C.textM;
 }
 
 export function defaultTabForRol(rol){
   rol = normalizeRole(rol);
+  if(rol==="gerente_general"||rol==="gerente_operaciones_admin")return "dashboard";
   if(rol==="tecnico")return "mobile";
   if(rol==="supervisor")return "supervisor";
   if(rol==="almacen")return "almacen";

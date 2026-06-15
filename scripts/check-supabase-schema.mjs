@@ -42,6 +42,17 @@ const domainTables = [
   "service_billing_expectations",
   "audit_logs",
   "sync_logs",
+  "legal_entities",
+  "business_units",
+  "roles",
+  "role_permissions",
+  "profile_permissions",
+  "attachments",
+  "document_templates",
+  "generated_documents",
+  "document_versions",
+  "activity_events",
+  "error_logs",
 ];
 
 function tableBlock(table) {

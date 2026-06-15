@@ -8,7 +8,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_role() in ('admin','gerencia','comercial','jefe_comercial'), false)
+  select coalesce(public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','gerencia','comercial','jefe_comercial'), false)
 $$;
 
 create or replace function public.can_project_write()
@@ -18,7 +18,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_role() in ('admin','gerencia','operaciones','administrativo_operaciones','supervisor','comercial','jefe_comercial'), false)
+  select coalesce(public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','gerencia','operaciones','administrativo_operaciones','supervisor','comercial','jefe_comercial'), false)
 $$;
 
 create or replace function public.can_finance_write()
@@ -28,7 +28,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_role() in ('admin','gerencia','finanzas'), false)
+  select coalesce(public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','gerencia','finanzas'), false)
 $$;
 
 create or replace function public.can_service_write()
@@ -38,7 +38,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_role() in ('admin','gerencia','operaciones','administrativo_operaciones','supervisor','monitoreo'), false)
+  select coalesce(public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','gerencia','operaciones','administrativo_operaciones','supervisor','monitoreo'), false)
 $$;
 
 create or replace function public.can_warehouse_write()
@@ -48,7 +48,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_role() in ('admin','gerencia','operaciones','administrativo_operaciones','supervisor','almacen'), false)
+  select coalesce(public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','gerencia','operaciones','administrativo_operaciones','supervisor','almacen'), false)
 $$;
 
 do $$
@@ -113,7 +113,7 @@ alter table public.profiles
   add constraint profiles_role_check
   check (
     role in (
-      'admin','gerencia','comercial','jefe_comercial','operaciones',
+      'admin','gerente_general','gerente_operaciones_admin','gerencia','comercial','jefe_comercial','operaciones',
       'administrativo_operaciones','supervisor','tecnico','monitoreo',
       'finanzas','almacen','viewer'
     )

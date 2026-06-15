@@ -34,7 +34,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_role() in ('admin','operaciones','supervisor'), false)
+  select coalesce(public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','operaciones','supervisor'), false)
 $$;
 
 create or replace function public.can_field_write()
@@ -44,7 +44,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_role() in ('admin','operaciones','supervisor','tecnico'), false)
+  select coalesce(public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','operaciones','supervisor','tecnico'), false)
 $$;
 
 create or replace function public.can_warehouse_write()
@@ -54,7 +54,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(public.current_role() in ('admin','operaciones','supervisor','almacen'), false)
+  select coalesce(public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','operaciones','supervisor','almacen'), false)
 $$;
 
 alter table companies enable row level security;
@@ -93,6 +93,17 @@ alter table service_events enable row level security;
 alter table service_billing_expectations enable row level security;
 alter table audit_logs enable row level security;
 alter table sync_logs enable row level security;
+alter table legal_entities enable row level security;
+alter table business_units enable row level security;
+alter table roles enable row level security;
+alter table role_permissions enable row level security;
+alter table profile_permissions enable row level security;
+alter table attachments enable row level security;
+alter table document_templates enable row level security;
+alter table generated_documents enable row level security;
+alter table document_versions enable row level security;
+alter table activity_events enable row level security;
+alter table error_logs enable row level security;
 
 drop policy if exists companies_select_own on companies;
 create policy companies_select_own on companies
@@ -140,7 +151,10 @@ begin
     'material_requests','material_request_items',
     'time_entries','field_clock_events','incidents','expenses','billing_milestones',
     'invoices','payments','accounts_payable','recurring_services','monitoring_protocols',
-    'service_contacts','installed_assets','service_events','service_billing_expectations'
+    'service_contacts','installed_assets','service_events','service_billing_expectations',
+    'legal_entities','business_units','roles','role_permissions','profile_permissions',
+    'attachments','document_templates','generated_documents','document_versions',
+    'activity_events','error_logs'
   ]
   loop
     execute format('drop policy if exists %I on %I', t || '_select_own_company', t);

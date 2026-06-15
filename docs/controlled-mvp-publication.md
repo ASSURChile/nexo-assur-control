@@ -2,10 +2,12 @@
 
 Fecha objetivo inicial: 2026-05-18  
 Última actualización: 2026-05-23  
-Estado: desplegado como MVP privado con reorganización operativa publicada  
+Estado: reemplazado por endurecimiento productivo NEXO; no usar backend antiguo  
 Hosting recomendado: Cloudflare Pages Free  
 URL gratuita esperada: `https://assur-control.pages.dev`  
-Base de datos/Auth/Storage: Supabase
+Base de datos/Auth/Storage: Supabase nuevo (`nexo-assur-prod` / `nexo-assur-staging`)
+
+> Nota 2026-06-04: el proyecto Supabase anterior dejo de resolver DNS y se considera abandonado. La configuracion vigente esta en `docs/production-operations-runbook.md`.
 
 ## Arquitectura MVP
 
@@ -30,8 +32,8 @@ Configurar en Cloudflare Pages > Settings > Environment variables:
 ```bash
 VITE_DATA_PROVIDER=supabase_normalized
 VITE_AUTH_MODE=supabase
-VITE_SUPABASE_URL=https://rerqodxtornjpeqqvebq.supabase.co
-VITE_SUPABASE_ANON_KEY=<anon public key>
+VITE_SUPABASE_URL=https://<PROJECT_REF_NUEVO>.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon public key nuevo>
 VITE_BACKEND_SYNC_ENABLED=false
 ```
 

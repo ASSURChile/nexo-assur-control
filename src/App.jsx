@@ -2,8 +2,10 @@ import { Component, lazy, Suspense, useState, useEffect, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { dataService } from "./services/dataService";
 import { repositories as repo, repositoryForKey } from "./services/repositories";
-import { clearSession, getSession, saveSession } from "./services/authService";
+import { clearSession, getSession, logoutSupabaseUser, saveSession } from "./services/authService";
+import { createActivityEvent } from "./services/activityEventService";
 import { initDefaults, seedPatagoniaFreshDemo } from "./services/bootstrapService";
+import { createDocumentVersion, generateQuoteDocument } from "./services/documentService";
 import {
   deleteClienteFromBackendQuiet,
   deleteInstalacionFromBackendQuiet,
@@ -24,10 +26,12 @@ import {
 import { hydrateFinancialDataFromBackend } from "./services/financialBackendService";
 import { getRuntimeProviderConfig, shouldUseBackendSync } from "./services/providerRegistry";
 import { deleteSupabaseNormalizedEntityQuiet, syncSupabaseNormalizedDataQuiet, syncSupabaseNormalizedEntityQuiet, syncSupabaseNormalizedTablesQuiet } from "./services/supabaseNormalizedSyncService";
+import { logFrontendError } from "./services/healthService";
 import PipelineView, { buildOportunidad } from "./views/PipelineView";
 import LoginScreen from "./views/LoginScreen";
 import GlobalSearch from "./components/GlobalSearch";
 import QuoteDocumentEditor from "./components/QuoteDocumentEditor";
+import { AssistantFloatingButton, AssistantPanel } from "./components/AssistantPanel";
 import { ShellSidebar, ShellTopBar } from "./layout/AppShell";
 import {
   Lbl,
@@ -162,6 +166,7 @@ class RuntimeErrorBoundary extends Component {
   }
   componentDidCatch(error, info) {
     console.error("ASSUR runtime error", error, info);
+    logFrontendError(error, { severity: "error", area: "runtime-boundary", componentStack: info?.componentStack }).catch(() => {});
   }
   render() {
     if (!this.state.error) return this.props.children;
@@ -618,8 +623,27 @@ function CotizacionesView({C,cotizaciones,plantillas,clientes,instalaciones,mate
   // ── LISTA ──
   const thS={padding:"8px 12px",color:C.textM,fontWeight:600,textAlign:"left",fontSize:9,textTransform:"uppercase",letterSpacing:"0.1em",fontFamily:ff};
   const tdS={padding:"9px 12px",fontFamily:ff,fontSize:13};
+  const pendientes=cotizaciones.filter(c=>["Borrador","En curso"].includes(c.estado||"Borrador")).length;
+  const conDocumento=cotizaciones.filter(c=>c.documentoClienteHtml||c.documentoClienteCloudStatus).length;
 
   return <div>
+    <ModuleHero
+      C={C}
+      eyebrow="Cotizaciones y propuestas"
+      title="Preparar ofertas para cliente"
+      subtitle="Trabaja por etapas: primero solicitud y datos base, luego costeo interno, documento cliente y revisión antes de convertir a propuesta."
+      actions={!readonly&&<Btn C={C} onClick={nueva}>Nueva cotización</Btn>}
+    >
+      <WorkflowSteps C={C} active={1} steps={["Solicitud recibida","Costeo interno","Documento cliente","Revisión / propuesta"]}/>
+      <div style={{marginTop:12}}>
+        <QuickActions C={C} items={[
+          {label:`${pendientes} por preparar`,description:"Borradores y cotizaciones en curso",tone:pendientes?C.amber:C.green,onClick:()=>setFiltroEst("En curso")},
+          {label:`${conDocumento} con documento`,description:"Versiones cliente disponibles",tone:conDocumento?C.green:C.textM,onClick:()=>setFiltroEst("Todos")},
+          {label:"Usar plantilla",description:"Partir desde un formato ya armado",tone:C.orange||C.blue,disabled:readonly||plantillas.length===0},
+          {label:"Revisión gerencial",description:"Control de margen y excepciones",tone:C.purple,onClick:()=>setFiltroEst("Cerrada")},
+        ]}/>
+      </div>
+    </ModuleHero>
     {/* Header */}
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap"}}>
       <input placeholder="Buscar cotización, cliente..." value={buscar} onChange={e=>setBuscar(e.target.value)} style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:5,color:C.text,padding:"7px 12px",fontSize:13,fontFamily:ff,outline:"none",flex:"1 1 220px"}}/>
@@ -629,18 +653,18 @@ function CotizacionesView({C,cotizaciones,plantillas,clientes,instalaciones,mate
       {!readonly&&<div style={{display:"flex",gap:7}}>
         {plantillas.length>0&&<Sel C={C} value="" onChange={v=>{if(v){const pl=plantillas.find(p=>p.id===v);if(pl)desde(pl);}}}
           opts={[{value:"",label:"Partir de plantilla..."},...plantillas.map(p=>({value:p.id,label:p.nombre}))]}/>}
-        <Btn C={C} onClick={nueva}>+ Nueva cotización</Btn>
+        <Btn C={C} onClick={nueva}>Nueva cotización</Btn>
       </div>}
     </div>
 
     {/* KPIs */}
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
       {[
-        {label:"Total",val:cotizaciones.length,color:C.blue},
-        {label:"En curso",val:cotizaciones.filter(c=>c.estado==="En curso").length,color:C.amber},
-        {label:"Cerradas",val:cotizaciones.filter(c=>c.estado==="Cerrada").length,color:C.green},
+        {label:"Solicitudes",val:cotizaciones.length,color:C.blue},
+        {label:"Por preparar",val:pendientes,color:C.amber},
+        {label:"Documento cliente",val:conDocumento,color:C.green},
         {label:"Con propuesta",val:cotizaciones.filter(c=>propuestas.some(p=>p.cotizacionId===c.id)).length,color:C.textM},
-      ].map(k=><div key={k.label} style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:7,padding:"10px 14px"}}>
+      ].map(k=><div key={k.label} style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:12,padding:"12px 14px",minWidth:0}}>
         <div style={{fontSize:9,color:C.textM,fontFamily:ff,textTransform:"uppercase",letterSpacing:"0.06em"}}>{k.label}</div>
         <div style={{fontSize:20,fontWeight:700,color:k.color,fontFamily:ff,marginTop:3}}>{k.val}</div>
       </div>)}
@@ -691,12 +715,55 @@ function CotizacionDetalle({C,cot:cotInit,clientes,instalaciones,materiales,para
 
   const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
   const guardar=()=>{onSave({...form,updatedAt:new Date().toISOString()});setSaved(true);setTimeout(()=>setSaved(false),2500);};
-  const guardarDocumentoCliente=(html,templateId)=>{
-    const updated={...form,documentoClienteHtml:html,documentoClienteTemplate:templateId||form.documentoClienteTemplate||"auto",documentoClienteUpdatedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  const guardarDocumentoCliente=async(html,templateId)=>{
+    const now=new Date().toISOString();
+    const selectedTemplate=templateId||form.documentoClienteTemplate||"auto";
+    let cloudPatch={};
+    try{
+      let generatedId=form.documentoClienteCloudId||form.generatedDocumentId||"";
+      if(!generatedId){
+        const doc=await generateQuoteDocument(form.id, null, {
+          quoteNumber:form.numero||"",
+          templateId:selectedTemplate,
+          status:"editable",
+        });
+        generatedId=doc?.id||"";
+      }
+      const nextVersion=(form.documentoClienteVersion||0)+1;
+      const version=generatedId?await createDocumentVersion(generatedId,{
+        contentHtml:html,
+        versionNumber:nextVersion,
+        metadata:{
+          quoteNumber:form.numero||"",
+          templateId:selectedTemplate,
+          clientId:form.clienteId||"",
+          netAmount:calc?.precioNeto||0,
+          savedAt:now,
+        },
+      }):null;
+      await createActivityEvent("quote",form.id,"document_version_created",{
+        summary:`Documento de cotización ${form.numero||form.id} versionado`,
+        metadata:{generatedDocumentId:generatedId,versionId:version?.id||"",versionNumber:nextVersion,templateId:selectedTemplate},
+      }).catch(()=>null);
+      cloudPatch={
+        documentoClienteCloudId:generatedId,
+        documentoClienteVersion:nextVersion,
+        documentoClienteVersionId:version?.id||"",
+        documentoClienteCloudStatus:"versionado",
+        documentoClienteCloudError:"",
+      };
+    }catch(error){
+      cloudPatch={
+        documentoClienteCloudStatus:"local",
+        documentoClienteCloudError:error.message||"No se pudo versionar en cloud.",
+      };
+    }
+    const updated={...form,documentoClienteHtml:html,documentoClienteTemplate:selectedTemplate,documentoClienteUpdatedAt:now,updatedAt:now,...cloudPatch};
     setForm(updated);
     onSave(updated);
     setSaved(true);
     setTimeout(()=>setSaved(false),2500);
+    return {cloudVersion:cloudPatch.documentoClienteVersion||0, cloudStatus:cloudPatch.documentoClienteCloudStatus};
   };
 
   const calc=useMemo(()=>calcCotizacion(form,params),[form,params]);
@@ -742,6 +809,8 @@ function CotizacionDetalle({C,cot:cotInit,clientes,instalaciones,materiales,para
 
   const colMargen=calc?calc.margenReal>=0.25?C.green:calc.margenReal>=0.15?C.amber:C.red:C.textM;
   const nProp=propuestas.filter(p=>p.cotizacionId===form.id).length;
+  const docReady=!!(form.documentoClienteHtml||form.documentoClienteCloudStatus);
+  const activeStep=nProp>0?3:docReady?2:((form.materiales?.length||form.tieneProyecto)?1:0);
 
   return <div style={{maxWidth:1100,margin:"0 auto"}}>
     {/* Breadcrumb */}
@@ -750,6 +819,23 @@ function CotizacionDetalle({C,cot:cotInit,clientes,instalaciones,materiales,para
       <span style={{color:C.textM}}>/</span>
       <span style={{color:C.text,fontFamily:"monospace",fontSize:12}}>{form.numero||"Nueva"}</span>
     </div>
+
+    <Card C={C} style={{marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:14,alignItems:"center",marginBottom:14}}>
+        <div>
+          <div style={{fontSize:11,color:C.orange||C.blue,textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:900,fontFamily:ff,marginBottom:5}}>Flujo de preparación</div>
+          <div style={{fontSize:18,color:C.text,fontWeight:900,fontFamily:ff,lineHeight:1.15}}>Solicitud → costeo → documento cliente → propuesta</div>
+        </div>
+        <Bdg color={activeStep>=2?C.green:C.amber} small>{docReady?"Documento listo":"Documento pendiente"}</Bdg>
+      </div>
+      <WorkflowSteps C={C} active={activeStep} steps={["Solicitud","Costeo interno","Documento cliente","Propuesta"]}/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,marginTop:14}}>
+        <Stat C={C} small compact label="Precio neto" value={calc?fmtCLP(calc.precioNeto):"—"} color={C.orange||C.blue}/>
+        <Stat C={C} small compact label="Margen" value={calc?fmtPct(calc.margenReal):"—"} color={colMargen}/>
+        <Stat C={C} small compact label="Recurrente mensual" value={calc?fmtCLP(calc.totalMesCLP||0):"—"} color={C.green}/>
+        <Stat C={C} small compact label="Propuestas" value={String(nProp)} color={nProp?C.green:C.textM}/>
+      </div>
+    </Card>
 
     {/* CABECERA */}
     <Card C={C} style={{marginBottom:14}}>
@@ -760,6 +846,9 @@ function CotizacionDetalle({C,cot:cotInit,clientes,instalaciones,materiales,para
         </select>
         {nProp>0&&<Bdg color={C.green} small>{nProp} propuesta{nProp!==1?"s":""} vinculadas</Bdg>}
         <div style={{flex:1}}/>
+        {form.documentoClienteCloudStatus&&<Bdg color={form.documentoClienteCloudStatus==="versionado"?C.green:C.amber} small>
+          {form.documentoClienteCloudStatus==="versionado"?`Doc v${form.documentoClienteVersion||1}`:"Doc local"}
+        </Bdg>}
         <Btn C={C} variant="soft" small onClick={()=>setDocOpen(true)}>🧾 Documento cliente</Btn>
         {!readonly&&<div style={{display:"flex",gap:7}}>
           <Btn C={C} ghost small onClick={()=>setModalPlantilla(true)}>📋 Guardar plantilla</Btn>
@@ -2214,7 +2303,7 @@ function EjecutivosTab({C,byEjec,ejChartData,togEj,ejSort,ejDir,params}){
             </th>)}
           </tr></thead>
           <tbody>
-            {sortedEjec.map((e,i)=>(
+            {byEjec.map((e,i)=>(
               <tr key={e.name} style={{borderBottom:"1px solid "+C.border,background:selected===e.name?C.blue+"11":i%2?C.bg2:"transparent",cursor:"pointer"}} onClick={()=>setSelected(selected===e.name?null:e.name)}>
                 <td style={{...tdS,fontWeight:600,color:C.text}}>
                   <div style={{display:"flex",alignItems:"center",gap:7}}>
@@ -4137,9 +4226,23 @@ function ModalAdicional({C,add,proyectos,onClose,onSave}){
 // USUARIOS
 // INIT + APP
 
+const sanitizeTheme = (value) => value === "dark" ? "dark" : "light";
+const themeKeyForUser = (session) => session?.userId ? `af_theme_${session.userId}` : null;
+const getThemeForSession = (session) => {
+  const key = themeKeyForUser(session);
+  if (!key || typeof localStorage === "undefined") return sanitizeTheme(repo.theme.get());
+  return sanitizeTheme(localStorage.getItem(key) || repo.theme.get());
+};
+const saveThemeForSession = (session, value) => {
+  const next = sanitizeTheme(value);
+  const key = themeKeyForUser(session);
+  if (key && typeof localStorage !== "undefined") localStorage.setItem(key, next);
+  else repo.theme.set(next);
+  return next;
+};
 
 export default function App(){
-  const [theme,setTheme]=useState(repo.theme.get());
+  const [theme,setTheme]=useState(sanitizeTheme(repo.theme.get()));
   const C={...(theme==="dark"?DARK:LIGHT),isLight:theme==="light"};
   const isLight=theme==="light";
   const [session,setSession]=useState(null);
@@ -4152,6 +4255,7 @@ export default function App(){
   const [ejecutivos,setEjecs]=useState(EJEC_DEF);
   const [calcP,setCalcP]=useState(null);
   const [usersOpen,setUsersOpen]=useState(false);
+  const [assistantOpen,setAssistantOpen]=useState(false);
   const [selectedClienteId,setSelectedClienteId]=useState(null);
   const [permisos,setPermisos]=useState(getPermisos());
   const [proyectos,setProyectos]=useState([]);
@@ -4171,7 +4275,18 @@ export default function App(){
   const runtimeConfig=useMemo(()=>getRuntimeProviderConfig(),[]);
   const backendSyncEnabled=useMemo(()=>shouldUseBackendSync(runtimeConfig),[runtimeConfig]);
 
-  useEffect(()=>{initDefaults();if(new URLSearchParams(window.location.search).get("seed")==="patagonia"){seedPatagoniaFreshDemo();window.history.replaceState(null,"",window.location.pathname);}const s=getSession();if(s&&s.userId){setSession(s);setTab(defaultTabForRol(s.rol));syncSupabaseNormalizedDataQuiet({onHydrated:loadAll});}loadAll();if(backendSyncEnabled){bootstrapMasterDataBackend();bootstrapOperationalBackend();bootstrapFinancialBackend();}fetchUSD();},[backendSyncEnabled]);
+  useEffect(()=>{
+    const onError=(event)=>logFrontendError(event.error||event.message,{severity:"error",area:"window-error"}).catch(()=>{});
+    const onRejection=(event)=>logFrontendError(event.reason||"Promise rejection",{severity:"error",area:"unhandled-rejection"}).catch(()=>{});
+    window.addEventListener("error",onError);
+    window.addEventListener("unhandledrejection",onRejection);
+    return ()=>{
+      window.removeEventListener("error",onError);
+      window.removeEventListener("unhandledrejection",onRejection);
+    };
+  },[]);
+
+  useEffect(()=>{initDefaults();if(new URLSearchParams(window.location.search).get("seed")==="patagonia"){seedPatagoniaFreshDemo();window.history.replaceState(null,"",window.location.pathname);}const s=getSession();if(s&&s.userId){setSession(s);setTheme(getThemeForSession(s));setTab(defaultTabForRol(s.rol));syncSupabaseNormalizedDataQuiet({onHydrated:loadAll});}loadAll();if(backendSyncEnabled){bootstrapMasterDataBackend();bootstrapOperationalBackend();bootstrapFinancialBackend();}fetchUSD();},[backendSyncEnabled]);
   const fetchUSD=async()=>{
     try{
       const res=await fetch("https://mindicador.cl/api/dolar");
@@ -4281,9 +4396,9 @@ export default function App(){
   const saveRegistroHora=reg=>setRegistrosHoras([...repo.horas.save(reg)]);
   const deleteRegistroHora=id=>setRegistrosHoras(repo.horas.remove(id));
   const saveRegistrosHorasBulk=regs=>setRegistrosHoras([...repo.horas.replaceAll(regs)]);
-  const handleLogin=s=>{saveSession(s);setSession(s);setTab(defaultTabForRol(s.rol));loadAll();syncSupabaseNormalizedDataQuiet({onHydrated:loadAll});};
-  const handleLogout=()=>{clearSession();setSession(null);};
-  const toggleTheme=()=>setTheme(t=>{const next=t==="light"?"dark":"light";repo.theme.set(next);return next;});
+  const handleLogin=s=>{saveSession(s);setSession(s);setTheme(getThemeForSession(s));setTab(defaultTabForRol(s.rol));loadAll();syncSupabaseNormalizedDataQuiet({onHydrated:loadAll});};
+  const handleLogout=()=>{const accessToken=session?.accessToken;clearSession();setSession(null);if(accessToken)logoutSupabaseUser(accessToken).catch(()=>{});};
+  const toggleTheme=()=>setTheme(t=>saveThemeForSession(session,t==="light"?"dark":"light"));
   const saveParams=p=>{repo.params.set(p);setParams(p);};
   const saveCats=c=>{repo.categorias.replaceAll(c);setCats(c);};
   const saveEjecs=e=>{repo.ejecutivos.replaceAll(e);setEjecs(e);};
@@ -4423,9 +4538,27 @@ export default function App(){
     const pendingIncidents = incidencias.filter(i => !["Cerrada", "Resuelta"].includes(i.estado)).length;
     const servicesActivation = servicios.filter(s => ["En activación", "Con falla"].includes(s.estado)).length;
     const map = {
+      gerente_general: {
+        title: "Mesa diaria de gerencia general",
+        text: "Acceso completo a salud financiera, comercial, operacional, servicios, usuarios y configuración del sistema.",
+        actions: [
+          { label: `${activeProjects} proyectos activos`, tab: "proyectos", tone: C.blue },
+          { label: `${overdueInvoices} facturas vencidas`, tab: "finanzas", tone: overdueInvoices ? C.red : C.green },
+          { label: "Salud del sistema", tab: "config", tone: C.purple },
+        ],
+      },
+      gerente_operaciones_admin: {
+        title: "Mesa gerencial de operaciones y administración",
+        text: "Vista consolidada de finanzas, administración, comercial y operación, sin configuración sensible.",
+        actions: [
+          { label: `${activeProjects} proyectos activos`, tab: "proyectos", tone: C.blue },
+          { label: `${overdueInvoices} facturas vencidas`, tab: "finanzas", tone: overdueInvoices ? C.red : C.green },
+          { label: "Control financiero", tab: "hitos", tone: C.green },
+        ],
+      },
       admin: {
-        title: "Vista gerencial",
-        text: "Prioriza caja, proyectos activos y alertas operativas antes de bajar al detalle.",
+        title: "Mesa diaria de gerencia",
+        text: "Parte por caja, proyectos críticos, servicios recurrentes y decisiones que destraban la operación.",
         actions: [
           { label: `${activeProjects} proyectos activos`, tab: "proyectos", tone: C.blue },
           { label: `${overdueInvoices} facturas vencidas`, tab: "finanzas", tone: overdueInvoices ? C.red : C.green },
@@ -4433,7 +4566,7 @@ export default function App(){
         ],
       },
       gerencia: {
-        title: "Decisiones de gerencia",
+        title: "Mesa diaria de gerencia",
         text: "Revisa salud comercial, caja y rentabilidad. Las áreas operan el detalle.",
         actions: [
           { label: `${activeOpps} oportunidades activas`, tab: "pipeline", tone: C.blue },
@@ -4442,16 +4575,16 @@ export default function App(){
         ],
       },
       comercial: {
-        title: "Trabajo comercial",
-        text: "Enfócate en contactos, prospectos, seguimiento y solicitudes hacia operaciones.",
+        title: "Mesa de vendedor",
+        text: "Enfócate en seguimiento de leads, avance de oportunidades propias y solicitudes de cotización.",
         actions: [
           { label: `${activeOpps} oportunidades`, tab: "pipeline", tone: C.blue },
-          { label: "Solicitar cotización", tab: "solicitudes_cotizacion", tone: C.amber },
+          { label: "Pedir cotización", tab: "solicitudes_cotizacion", tone: C.amber },
           { label: "Cotización rápida", tab: "cotizacion_rapida", tone: C.green },
         ],
       },
       jefe_comercial: {
-        title: "Gestión comercial",
+        title: "Mesa de jefatura comercial",
         text: "Controla actividad de vendedores, pipeline, solicitudes y propuestas listas para seguimiento.",
         actions: [
           { label: `${activeOpps} oportunidades`, tab: "pipeline", tone: C.blue },
@@ -4460,21 +4593,21 @@ export default function App(){
         ],
       },
       operaciones: {
-        title: "Operación en curso",
+        title: "Mesa de operaciones",
         text: "Gestiona solicitudes de cotización, propuestas, recursos, materiales y cierre operativo.",
         actions: [
-          { label: "Bandeja cotizaciones", tab: "bandeja_cotizaciones", tone: C.blue },
+          { label: "Cotizaciones por preparar", tab: "bandeja_cotizaciones", tone: C.blue },
           { label: `${activeProjects} proyectos activos`, tab: "proyectos", tone: C.green },
           { label: "Almacén", tab: "almacen", tone: C.purple },
         ],
       },
       administrativo_operaciones: {
-        title: "Apoyo operativo",
+        title: "Mesa administrativa de operaciones",
         text: "Administra materiales, stock, recursos y datos de apoyo para cotizaciones y proyectos.",
         actions: [
           { label: "Stock / almacén", tab: "almacen", tone: C.blue },
           { label: "Materiales", tab: "materiales", tone: C.green },
-          { label: "Bandeja cotizaciones", tab: "bandeja_cotizaciones", tone: C.amber },
+          { label: "Cotizaciones por preparar", tab: "bandeja_cotizaciones", tone: C.amber },
         ],
       },
       supervisor: {
@@ -4487,7 +4620,7 @@ export default function App(){
         ],
       },
       finanzas: {
-        title: "Control financiero",
+        title: "Mesa financiera",
         text: "Parte por vencimientos, caja y conciliación esperada contra Softland.",
         actions: [
           { label: `${overdueInvoices} vencidas`, tab: "finanzas", tone: overdueInvoices ? C.red : C.green },
@@ -4496,7 +4629,7 @@ export default function App(){
         ],
       },
       monitoreo: {
-        title: "Servicios recurrentes",
+        title: "Mesa de monitoreo",
         text: "Controla activaciones, protocolos incompletos y servicios con falla.",
         actions: [
           { label: `${servicesActivation} por revisar`, tab: "servicios", tone: servicesActivation ? C.amber : C.green },
@@ -4505,7 +4638,7 @@ export default function App(){
         ],
       },
       almacen: {
-        title: "Almacén y materiales",
+        title: "Mesa de almacén",
         text: "Atiende solicitudes, disponibilidad y entregas a proyectos.",
         actions: [
           { label: "Almacén", tab: "almacen", tone: C.blue },
@@ -4514,7 +4647,7 @@ export default function App(){
         ],
       },
       viewer: {
-        title: "Vista de consulta",
+        title: "Mesa de consulta",
         text: "Puedes revisar información sin modificar datos operativos.",
         actions: [
           { label: "Dashboard", tab: "dashboard", tone: C.blue },
@@ -4532,7 +4665,13 @@ export default function App(){
   const isMobileRol = rol==="tecnico";
   if(isMobileRol){
     const usuarios=repo.usuarios.list();
-    return <RuntimeErrorBoundary C={C}><Suspense fallback={<ViewLoading C={C} label="Cargando vista técnica..." />}><MobileApp C={C} session={session} rol={rol} proyectos={proyectos} tecnicos={tecnicos} contratistas={contratistas} materiales={materiales} incidencias={incidencias} fichajes={fichajes} instalaciones={instalaciones} params={params} usuarios={usuarios} onSaveProyecto={saveProyecto} onSaveFichaje={saveFichaje} onSaveIncidencia={saveIncidencia} onSaveProyectoFoto={(pid,foto)=>{const ps=repo.proyectos.list();const i=ps.findIndex(x=>x.id===pid);if(i>=0){const next={...ps[i],fotos:[...(ps[i].fotos||[]),foto],updatedAt:new Date().toISOString()};saveProyecto(next);};}} onSaveSolicitud={(sol)=>{const ps=repo.proyectos.list();const i=ps.findIndex(x=>x.id===sol.proyectoId);if(i>=0){const next={...ps[i],solicitudesMaterial:[...(ps[i].solicitudesMaterial||[]),sol],updatedAt:new Date().toISOString()};saveProyecto(next);};}} onLogout={handleLogout}/></Suspense></RuntimeErrorBoundary>;
+    return <RuntimeErrorBoundary C={C}>
+      <Suspense fallback={<ViewLoading C={C} label="Cargando vista técnica..." />}>
+        <MobileApp C={C} session={session} rol={rol} proyectos={proyectos} tecnicos={tecnicos} contratistas={contratistas} materiales={materiales} incidencias={incidencias} fichajes={fichajes} instalaciones={instalaciones} params={params} usuarios={usuarios} onSaveProyecto={saveProyecto} onSaveFichaje={saveFichaje} onSaveIncidencia={saveIncidencia} onSaveProyectoFoto={(pid,foto)=>{const ps=repo.proyectos.list();const i=ps.findIndex(x=>x.id===pid);if(i>=0){const next={...ps[i],fotos:[...(ps[i].fotos||[]),foto],updatedAt:new Date().toISOString()};saveProyecto(next);};}} onSaveSolicitud={(sol)=>{const ps=repo.proyectos.list();const i=ps.findIndex(x=>x.id===sol.proyectoId);if(i>=0){const next={...ps[i],solicitudesMaterial:[...(ps[i].solicitudesMaterial||[]),sol],updatedAt:new Date().toISOString()};saveProyecto(next);};}} onLogout={handleLogout}/>
+        <AssistantFloatingButton C={C} onClick={()=>setAssistantOpen(true)}/>
+        <AssistantPanel C={C} isLight={isLight} open={assistantOpen} onClose={()=>setAssistantOpen(false)} session={session}/>
+      </Suspense>
+    </RuntimeErrorBoundary>;
   }
 
   const goTab=id=>{if(!canSeeModule(id))return;setTab(id);if(id!=="clientes")setSelectedClienteId(null);};
@@ -4544,9 +4683,10 @@ export default function App(){
   return <RuntimeErrorBoundary C={C}><div style={{background:C.bg0,minHeight:"100vh",color:C.text,fontFamily:ff,fontSize:14}}>
     <style>{`
       * { box-sizing: border-box; }
-      body { background: ${C.bg0}; font-size: 14px; }
+      html { background: ${C.bg0}; }
+      body { background: ${C.bg0}; font-size: 14px; margin: 0; }
       .assur-topbar-brand, .assur-topbar-current { display: none !important; }
-      .assur-app-grid { display: grid; grid-template-columns: 248px minmax(0,1fr); min-height: calc(100vh - 78px); }
+      .assur-app-grid { display: grid; grid-template-columns: 252px minmax(0,1fr); min-height: calc(100vh - 78px); }
       .assur-page-head { padding: 28px 30px 0; max-width: 1480px; margin: 0 auto; }
       .assur-page-body { padding: 0 30px 38px; max-width: 1480px; margin: 0 auto; }
       .assur-page-title-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
@@ -4560,6 +4700,10 @@ export default function App(){
       .assur-page-body, .assur-page-body p, .assur-page-body div, .assur-page-body td, .assur-page-body th { overflow-wrap: anywhere; }
       .assur-page-body th { color: ${C.textM} !important; font-size: 11px !important; letter-spacing: 0.06em !important; }
       .assur-page-body td { font-size: 13px; line-height: 1.35; }
+      .assur-page-body h1 { font-size: clamp(24px, 3vw, 32px) !important; line-height: 1.08 !important; }
+      .assur-page-body h2 { font-size: clamp(18px, 2vw, 22px) !important; line-height: 1.16 !important; }
+      .assur-page-body [style*="font-size: 42"], .assur-page-body [style*="font-size:42"] { font-size: clamp(28px, 4vw, 36px) !important; }
+      .assur-page-body [style*="font-size: 34"], .assur-page-body [style*="font-size:34"] { font-size: clamp(25px, 3vw, 32px) !important; }
       @media (max-width: 1180px) {
         .assur-topbar { padding: 10px 18px !important; min-height: 86px !important; align-items: flex-start !important; gap: 10px !important; }
         .assur-topbar-brand { display: flex !important; width: auto !important; min-width: 190px !important; padding-top: 4px; }
@@ -4576,12 +4720,18 @@ export default function App(){
       @media (max-width: 820px) {
         .assur-topbar { min-height: auto !important; position: static !important; }
         .assur-market-pill, .assur-theme-button, .assur-user-chip { display: none !important; }
+        .assur-new-action-button { flex: 1 1 148px !important; justify-content: center !important; }
         .assur-app-grid { display: block; min-height: auto; }
-        .assur-sidebar { position: static !important; height: auto !important; border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.12); padding: 12px 12px !important; max-height: 280px; }
+        .assur-sidebar { position: static !important; height: auto !important; border-right: none !important; border-bottom: 1px solid ${C.border}; padding: 10px 14px !important; max-height: none !important; overflow-x: auto !important; overflow-y: hidden !important; }
         .assur-sidebar > div:first-child { display: none; }
         .assur-sidebar-brand { display: none !important; }
-        .assur-sidebar > div { margin-bottom: 8px !important; }
-        .assur-sidebar button { padding-top: 11px !important; padding-bottom: 11px !important; }
+        .assur-sidebar > div:nth-child(2) { display: none !important; }
+        .assur-sidebar-group { margin-bottom: 0 !important; }
+        .assur-sidebar-group:not(.is-active) { display: none !important; }
+        .assur-sidebar-group-title { display: none !important; }
+        .assur-sidebar-tabs { display: flex !important; gap: 8px !important; margin-top: 0 !important; padding-left: 0 !important; overflow-x: auto !important; }
+        .assur-sidebar button { width: auto !important; flex: 0 0 auto !important; padding: 10px 14px !important; white-space: nowrap !important; }
+        .assur-sidebar button span { display: none !important; }
         .assur-page-head { padding: 18px 14px 0; }
         .assur-page-body { padding: 0 14px 24px; }
         .assur-page-title-row { align-items: flex-start; flex-direction: column; }
@@ -4600,7 +4750,8 @@ export default function App(){
         .assur-topbar { padding: 12px 14px !important; }
         .assur-topbar-brand span:first-child { font-size: 14px !important; }
         .assur-topbar-search { min-width: 0 !important; }
-        .assur-sidebar { max-height: 230px; }
+        .assur-assistant-floating { bottom: 84px !important; right: 14px !important; padding: 11px 14px !important; font-size: 12px !important; }
+        .assur-sidebar { max-height: none; }
         .assur-page-body, .assur-page-head { padding-left: 14px !important; padding-right: 14px !important; }
       }
     `}</style>
@@ -4612,10 +4763,12 @@ export default function App(){
       sessionName={session.nombre}
       roleLabel={rolLabel(rol)}
       roleColor={rolColor(rol,C)}
-      searchSlot={<GlobalSearch C={C} clientes={clientes} instalaciones={instalaciones} propuestas={propuestas} params={params} onGoClient={c=>{setSelectedClienteId(c.id);goTab("clientes");}} onGoTab={goTab} dark/>}
+      searchSlot={<GlobalSearch C={C} clientes={clientes} instalaciones={instalaciones} propuestas={propuestas} params={params} onGoClient={c=>{setSelectedClienteId(c.id);goTab("clientes");}} onGoTab={goTab} dark={!isLight}/>}
       showUsers={rol==="admin"}
       onToggleTheme={toggleTheme}
+      onAssistant={()=>setAssistantOpen(true)}
       onUsers={()=>setUsersOpen(true)}
+      onNewAction={()=>goTab(canSeeModule("solicitudes_cotizacion") ? "solicitudes_cotizacion" : "dashboard")}
       onLogout={handleLogout}
     />
     
@@ -4623,7 +4776,7 @@ export default function App(){
       <ShellSidebar C={C} isLight={isLight} groups={TAB_GROUPS} activeGroup={activeGroup} tab={tab} canSeeModule={canSeeModule} goTab={goTab} currentTabLabel={currentTabLabel}/>
 
       <main style={{minWidth:0}}>
-        <div className="assur-page-head">
+        {tab !== "dashboard" && <div className="assur-page-head">
           <div className="assur-page-title-row">
             <div>
               <div style={{fontSize:12,color:C.textM,textTransform:"uppercase",letterSpacing:"0.14em",fontWeight:800,fontFamily:ff,marginBottom:6}}>{activeGroup.label}</div>
@@ -4644,10 +4797,10 @@ export default function App(){
               </button>)}
             </div>
           </div>}
-        </div>
+        </div>}
         <div className="assur-page-body">
       <Suspense fallback={<ViewLoading C={C} />}>
-      {tab==="dashboard"&&<ExecutiveDashboard C={C} clientes={clientes} propuestas={propuestas} proyectos={proyectos} servicios={servicios} eventosServicio={eventosServicio} params={params} incidencias={incidencias} fichajes={fichajes} registrosHoras={registrosHoras} tecnicos={tecnicos} contratistas={contratistas} oportunidades={oportunidades} onGoTab={goTab}/>}
+      {tab==="dashboard"&&<ExecutiveDashboard C={C} role={rol} sessionName={session.nombre} clientes={clientes} propuestas={propuestas} proyectos={proyectos} servicios={servicios} eventosServicio={eventosServicio} params={params} incidencias={incidencias} fichajes={fichajes} registrosHoras={registrosHoras} tecnicos={tecnicos} contratistas={contratistas} oportunidades={oportunidades} facturas={repo.facturas.list()} cuentasPagar={repo.cuentasPagar.list()} materiales={materiales} onGoTab={goTab}/>}
       {tab==="comercial_dashboard"&&<ComercialDashboardView C={C} oportunidades={oportunidades} propuestas={propuestas} clientes={clientes} onGoTab={goTab}/>}
       {tab==="pipeline"&&<PipelineView C={C} oportunidades={oportunidades} clientes={clientes} instalaciones={instalaciones} ejecutivos={ejecutivos} propuestas={propuestas} onSave={saveOportunidad} onDelete={deleteOportunidad} onConvertirAPropuesta={(opo)=>saveOportunidad({...opo,requiereCotizacion:true,etapa:"Solicitud de cotización",historial:[...(opo.historial||[]),{fecha:new Date().toISOString(),accion:"Solicitud enviada a Cotizaciones y Propuestas"}]})} readonly={readonly} createOpportunity={bOportunidad} nextOpportunityNumber={()=>{const cnt=parseInt(repo.opCounter.get()||"0")+1;repo.opCounter.set(String(cnt));return `OP-${new Date().getFullYear()}-${String(cnt).padStart(3,"0")}`;}}/>}
       {tab==="solicitudes_cotizacion"&&<SolicitudesCotizacionView C={C} oportunidades={oportunidades} clientes={clientes} instalaciones={instalaciones} propuestas={propuestas} onSaveOportunidad={saveOportunidad} onCrearPropuesta={createProposalFromOpportunity} readonly={!canDo("solicitudes_cotizacion","editar")&&!canDo("solicitudes_cotizacion","crear")}/>}
@@ -4677,6 +4830,7 @@ export default function App(){
       </main>
     </div>
     {calcP&&<Calculadora C={C} propuesta={calcP} cliente={clientes.find(c=>c.id===calcP.clienteId)||null} instalacion={instalaciones.find(i=>i.id===calcP.instalacionId)||null} params={params} onClose={()=>setCalcP(null)}/>}
+    <AssistantPanel C={C} isLight={isLight} open={assistantOpen} onClose={()=>setAssistantOpen(false)} session={session}/>
     {usersOpen&&<Suspense fallback={null}><UsuariosView C={C} currentUser={session} permisos={permisos} onSavePermisos={savePermisos} onClose={()=>setUsersOpen(false)}/></Suspense>}
   </div></RuntimeErrorBoundary>;
 }

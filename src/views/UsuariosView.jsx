@@ -33,9 +33,32 @@ function PermisosPanel({C,permisos,onSave}){
   });
   const mods=MODULOS.filter(m=>m.id!=="config");
   const rolesMatrix=ROLE_OPTIONS.filter(r=>!["admin","tecnico"].includes(r.value));
-  return <div style={{marginTop:18,padding:"18px",background:C.bg2,borderRadius:8,border:"1px solid "+C.border}}>
-    <div style={{fontSize:11,fontWeight:900,color:C.blue,textTransform:"uppercase",letterSpacing:"0.14em",fontFamily:ff,marginBottom:5}}>Matriz de acceso por rol</div>
-    <div style={{fontSize:12,color:C.textM,fontFamily:ff,marginBottom:14,lineHeight:1.45}}>Activa módulos y acciones por rol. Administrador siempre tiene acceso total y Técnico usa la vista móvil de terreno.</div>
+  const roleGuides=[
+    ["Comercial","Contactos, pipeline, seguimientos y pedir cotización.",C.green],
+    ["Operaciones","Cotizaciones, costos, materiales, proyectos y cierres.",C.orange||C.blue],
+    ["Finanzas","Facturación, cobranza, caja, CxP y rentabilidad.",C.red],
+    ["Almacén","Stock, solicitudes y entrega de materiales.",C.purple],
+  ];
+  const sensitive=[
+    ["Finanzas", "Habilita cobranza, CxP, caja y rentabilidad. Revisar antes de dar a comercial o viewer.", C.red],
+    ["Costos internos", "Permite ver/editar margen, materiales valorizados y gastos del proyecto.", C.orange||C.blue],
+    ["Configuración", "Puede afectar usuarios, parámetros, integraciones y salud del sistema.", C.purple],
+  ];
+  return <div style={{marginTop:18,padding:"18px",background:C.bg2,borderRadius:14,border:"1px solid "+C.border}}>
+    <div style={{fontSize:11,fontWeight:900,color:C.orange||C.blue,textTransform:"uppercase",letterSpacing:"0.08em",fontFamily:ff,marginBottom:5}}>Matriz de acceso por rol</div>
+    <div style={{fontSize:12,color:C.textM,fontFamily:ff,marginBottom:14,lineHeight:1.45}}>Activa módulos y acciones por rol. Administrador mantiene acceso total y Técnico usa una experiencia móvil separada.</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:8,marginBottom:14}}>
+      {roleGuides.map(([title,text,color])=><div key={title} style={{background:C.bg1,border:"1px solid "+color+"33",borderRadius:12,padding:"10px 11px"}}>
+        <div style={{fontSize:12,fontWeight:900,color,fontFamily:ff,lineHeight:1.2}}>{title}</div>
+        <div style={{fontSize:11,color:C.textM,fontFamily:ff,lineHeight:1.35,marginTop:4}}>{text}</div>
+      </div>)}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:8,marginBottom:14}}>
+      {sensitive.map(([title,text,color])=><div key={title} style={{background:color+"10",border:"1px solid "+color+"38",borderRadius:12,padding:"10px 11px"}}>
+        <div style={{fontSize:11,fontWeight:950,color,fontFamily:ff,textTransform:"uppercase",letterSpacing:"0.06em"}}>{title}</div>
+        <div style={{fontSize:11,color:C.textM,fontFamily:ff,lineHeight:1.35,marginTop:4}}>{text}</div>
+      </div>)}
+    </div>
     <div style={{overflowX:"auto"}}>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
         <thead><tr style={{borderBottom:"1px solid "+C.border}}>
@@ -45,7 +68,7 @@ function PermisosPanel({C,permisos,onSave}){
         <tbody>
           {mods.map((m,i)=>{
             return <tr key={m.id} style={{borderBottom:"1px solid "+C.border,background:i%2?C.bg2+"88":"transparent"}}>
-              <td style={{position:"sticky",left:0,zIndex:1,background:i%2?C.bg2:"#fff",padding:"9px 10px",fontWeight:800,color:C.text,fontFamily:ff,fontSize:12}}>{m.label}</td>
+              <td style={{position:"sticky",left:0,zIndex:1,background:i%2?C.bg2:C.bg1,padding:"9px 10px",fontWeight:800,color:C.text,fontFamily:ff,fontSize:12}}>{m.label}</td>
               {rolesMatrix.map(r=>{
                 const value=normalizePermissionValue(local?.[r.value]?.[m.id]);
                 return <td key={r.value} style={{textAlign:"center",padding:"8px"}}>
@@ -65,7 +88,7 @@ function PermisosPanel({C,permisos,onSave}){
       </table>
     </div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginTop:12}}>
-      <div style={{fontSize:11,color:C.textM,fontFamily:ff}}>Tip: crea usuarios con rol “Comercial” o “Finanzas” y luego ajusta aquí solo los módulos que realmente necesitan.</div>
+      <div style={{fontSize:11,color:C.textM,fontFamily:ff}}>Tip: parte con una plantilla de rol y habilita excepciones por módulo solo cuando el proceso real lo necesite.</div>
       <Btn C={C} onClick={save}>{saved?"✓ Guardado":"Guardar permisos"}</Btn>
     </div>
   </div>;
@@ -147,7 +170,7 @@ export default function UsuariosView({C,currentUser,onClose,permisos,onSavePermi
     </div>
     {loadingProfiles&&<div style={{padding:"10px 12px",background:C.bg2,border:"1px solid "+C.border,borderRadius:6,color:C.textM,fontSize:12,fontFamily:ff,marginBottom:10}}>Cargando perfiles desde Supabase...</div>}
     {profilesError&&<div style={{padding:"10px 12px",background:C.red+"12",border:"1px solid "+C.red+"55",borderRadius:6,color:C.red,fontSize:12,fontFamily:ff,marginBottom:10}}>{profilesError}</div>}
-    {supabaseAuth&&<div style={{padding:"10px 12px",background:C.blue+"10",border:"1px solid "+C.blue+"44",borderRadius:6,color:C.textM,fontSize:12,fontFamily:ff,marginBottom:10,lineHeight:1.45}}>Para agregar un usuario nuevo: créalo primero en Supabase Authentication y luego crea o ajusta su fila en <strong style={{color:C.text}}>profiles</strong>. Esta pantalla permite cambiar rol, estado y ficha técnica sin exponer contraseñas.</div>}
+    {supabaseAuth&&<div style={{padding:"10px 12px",background:(C.orange||C.blue)+"10",border:"1px solid "+(C.orange||C.blue)+"44",borderRadius:10,color:C.textM,fontSize:12,fontFamily:ff,marginBottom:10,lineHeight:1.45}}>Para agregar un usuario nuevo: créalo primero en Supabase Authentication y luego crea o ajusta su fila en <strong style={{color:C.text}}>profiles</strong>. Esta pantalla permite cambiar rol, estado y ficha técnica sin exponer contraseñas.</div>}
     {lista.map(u=><div key={u.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.bg2,borderRadius:5,border:"1px solid "+C.border,marginBottom:7}}>
       <div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:C.text,fontFamily:ff}}>{u.nombre}</div><div style={{fontSize:11,color:C.textM,fontFamily:ff}}>{u.email}{u.area?` · ${u.area}`:""}{u.cargo?` · ${u.cargo}`:""}{normalizeRole(u.rol)==="tecnico"&&<span> · Técnico: {tecnicos.find(t=>t.id===u.tecnicoId)?.nombre||"sin vínculo"}</span>}</div></div>
       <Bdg color={rolColor(u.rol,C)} small>{rolLabel(u.rol)}</Bdg>

@@ -1,6 +1,6 @@
 import { calcFinanceSummary, calcProjectFinance, reconcileSoftlandFinancials } from "../src/domain/finance.js";
 import { buildBillingExpectationsForService, calcServiciosKpis, reconcileBillingExpectations } from "../src/domain/recurringServices.js";
-import { calcCostoKm } from "../src/domain/operations.js";
+import { calcCostoKm, valorizarHorasTecnicas, valorizarMaterialEntregado } from "../src/domain/operations.js";
 import { bCotizacion, calcCotizacion, nextNroCot, nextNroProp } from "../src/domain/quoting.js";
 import { buildBackupPayload } from "../src/services/backupService.js";
 
@@ -58,6 +58,23 @@ assert(kpis.mrrActivacion===500,"MRR en activacion incorrecto");
 
 const km=calcCostoKm({precioBencina:1000,rendimientoVehiculo:10,pagoLeasingMensual:200000,kmMensualesPromedio:1000});
 assert(km.total===300,"Costo km incorrecto");
+
+const horaReal=valorizarHorasTecnicas({
+  horas:8,
+  tipoHoraId:"normal",
+  fecha:"2026-05-20",
+  empresaOrigen:"servicios_electronicos",
+  lineaNegocio:"tecnica",
+  rolCargo:"tecnico",
+  area:"Operaciones",
+  params:{tiposHora:[{id:"normal",recargo:0}]},
+  costosHora:[{id:"hc1",periodo:"2026-05",empresaOrigen:"servicios_electronicos",lineaNegocio:"tecnica",rolCargo:"tecnico",area:"Operaciones",costoHoraReal:9500}],
+});
+assert(horaReal.total===76000&&horaReal.costoHoraOrigen==="softland_real","Costo hora real Softland no valorizo horas.");
+const horaManual=valorizarHorasTecnicas({horas:2,tipoHoraId:"normal",costoManualHora:5000,params:{tiposHora:[{id:"normal",recargo:0}]},costosHora:[]});
+assert(horaManual.total===10000&&horaManual.costoHoraOrigen==="manual","Fallback manual de costo hora no funciona.");
+const materialVal=valorizarMaterialEntregado({item:{codigo:"CAM-IP-4MP",cantidad:2},materiales:[{id:"m1",codigo:"CAM-IP-4MP",nombre:"Camara",precioUnitario:125000,stockActual:18,stockSincronizado:true}]});
+assert(materialVal.costoTotal===250000&&materialVal.costoOrigen==="catalogo_softland","Valorizacion de material por catalogo Softland incorrecta.");
 
 const paramsCot={
   rolesTecnicos:[{id:"rol1",nombre:"Tecnico",costoHora:10000}],

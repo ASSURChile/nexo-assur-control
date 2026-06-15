@@ -30,7 +30,7 @@ function normalizeApiConfig(config){
 }
 
 export default function FinanzasView({C,clientes,proyectos,params,onSaveCliente,onSaveProyecto,readonly}){
-  const [subTab,setSubTab]=useState("centros");
+  const [subTab,setSubTab]=useState("resumen");
   const [gastos,setGastos]=useState(asArray(repo.gastos.list()));
   const [facturas,setFacturas]=useState(asArray(repo.facturas.list()));
   const [cuentasPorPagar,setCuentasPorPagar]=useState(asArray(repo.cuentasPagar.list()));
@@ -309,12 +309,12 @@ export default function FinanzasView({C,clientes,proyectos,params,onSaveCliente,
   const CATS_GASTO=["Personal","Arriendo y servicios","Software y plataformas","Servicios profesionales","Marketing y ventas","Subcontratación pool","Otros administrativos"];
   
   const tabItems=[
-    {value:"resumen",label:"Resumen"},
-    {value:"facturas",label:"Facturación"},
-    {value:"cuentas",label:"Cuentas por pagar"},
-    {value:"flujo",label:"Flujo de caja"},
-    {value:"centros",label:"Centros de costo"},
-    {value:"gastos",label:"Gastos"},
+    {value:"resumen",label:"Panel financiero"},
+    {value:"facturas",label:"Cobranza"},
+    {value:"cuentas",label:"CxP"},
+    {value:"flujo",label:"Caja"},
+    {value:"gastos",label:"Costos operativos"},
+    {value:"centros",label:"Centros"},
     {value:"api",label:"Softland"},
   ];
   const facturasVencidas=facturas.filter(f=>String(f.estado||"").toLowerCase().includes("venc")).length;
@@ -325,17 +325,17 @@ export default function FinanzasView({C,clientes,proyectos,params,onSaveCliente,
     <ModuleHero
       C={C}
       eyebrow="Finanzas"
-      title="Control financiero y Softland"
-      subtitle="Trabaja desde lo urgente hacia el detalle: cobranza, cuentas por pagar, caja, centros de costo e importación desde Softland."
+      title="Facturación, cobranza y caja"
+      subtitle="Parte por lo urgente: qué cobrar, qué pagar, cuánto entra, cuánto sale y dónde se pierde margen."
       actions={<Btn C={C} small variant="soft" onClick={()=>setSubTab("api")}>Preparar Softland</Btn>}
     >
       <WorkflowSteps C={C} active={Math.min(3, [facturas.length>0, cuentasPorPagar.length>0, clientes.some(c=>c.centroCosto), apiConfig.habilitada].filter(Boolean).length)} steps={["Importar datos", "Conciliar cuentas", "Mapear centros", "Revisar caja"]}/>
       <div style={{marginTop:12}}>
         <QuickActions C={C} items={[
-          {label:`${facturasVencidas} facturas vencidas`,description:"Prioridad de cobranza",tone:facturasVencidas?C.red:C.green,onClick:()=>setSubTab("facturas")},
-          {label:`${cuentasVencidas} CxP vencidas`,description:"Pagos a proveedores",tone:cuentasVencidas?C.red:C.green,onClick:()=>setSubTab("cuentas")},
-          {label:`${centrosSinMapear} clientes sin centro`,description:"Mapeo para Softland",tone:centrosSinMapear?C.amber:C.green,onClick:()=>setSubTab("centros")},
-          {label:"Flujo de caja",description:"Vista mensual y proyección",tone:C.blue,onClick:()=>setSubTab("flujo")},
+          {label:`Cobrar: ${facturasVencidas} vencidas`,description:"Facturas y clientes críticos",tone:facturasVencidas?C.red:C.green,onClick:()=>setSubTab("facturas")},
+          {label:`Pagar: ${cuentasVencidas} vencidas`,description:"Compromisos con proveedores",tone:cuentasVencidas?C.red:C.green,onClick:()=>setSubTab("cuentas")},
+          {label:"Caja 30/60/90",description:"Flujo mensual y proyección",tone:C.orange||C.blue,onClick:()=>setSubTab("flujo")},
+          {label:`${centrosSinMapear} sin centro`,description:"Preparación para Softland",tone:centrosSinMapear?C.amber:C.green,onClick:()=>setSubTab("centros")},
         ]}/>
       </div>
     </ModuleHero>

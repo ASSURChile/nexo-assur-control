@@ -1,5 +1,6 @@
 import { dataService } from "./dataService.js";
 import { repositories as repo, repositoryForKey } from "./repositories.js";
+import { buildOperatingContext } from "../domain/companyContext.js";
 
 const newId=()=>dataService.id();
 const text=(value)=>String(value ?? "").trim();
@@ -11,6 +12,13 @@ const pick=(row,cols,names)=>{
   }
   return "";
 };
+const operatingContext=(row,cols,fallbackLine="")=>buildOperatingContext({
+  empresaOrigen:pick(row,cols,["empresaOrigen","empresa_origen","empresa","sociedad","razonEmpresa","razon_social_empresa"]),
+  empresaRut:pick(row,cols,["empresaRut","rutEmpresa","rut_empresa"]),
+  lineaNegocio:pick(row,cols,["lineaNegocio","linea_negocio","familia","gestion","tipoProyecto"])||fallbackLine,
+  sourceSystem:"softland",
+  externalId:pick(row,cols,["codigo","codCliente","id","folio","numero","numeroFactura","numeroDocumento"]),
+});
 
 export const SOFTLAND_IMPORT_TYPES = {
   clientes:{
@@ -31,6 +39,7 @@ export const SOFTLAND_IMPORT_TYPES = {
       estado:"Activo",centroCosto:"",
       origen:"softland",
       origenId:pick(row,cols,["codigo","codCliente","id"]),
+      ...operatingContext(row,cols),
       createdAt:new Date().toISOString()
     }),
     claveDup:"rut"
@@ -52,7 +61,8 @@ export const SOFTLAND_IMPORT_TYPES = {
       stockMinimo:money(pick(row,cols,["stockMinimo"])),
       descripcion:"",
       origen:"softland",
-      origenId:pick(row,cols,["codigo"])
+      origenId:pick(row,cols,["codigo"]),
+      ...operatingContext(row,cols,"tecnica")
     }),
     claveDup:"codigo"
   },
@@ -78,6 +88,7 @@ export const SOFTLAND_IMPORT_TYPES = {
       proyectoId:"",hitoId:"",
       origen:"softland",
       origenId:pick(row,cols,["folio","numero","numeroFactura"]),
+      ...operatingContext(row,cols),
       createdAt:new Date().toISOString()
     }),
     claveDup:"folio"
@@ -96,6 +107,7 @@ export const SOFTLAND_IMPORT_TYPES = {
       medio:pick(row,cols,["medio","formaPago"])||"Transferencia",
       observaciones:pick(row,cols,["observaciones","glosa"]),
       origen:"softland",
+      ...operatingContext(row,cols),
       createdAt:new Date().toISOString()
     }),
     claveDup:null
@@ -123,6 +135,7 @@ export const SOFTLAND_IMPORT_TYPES = {
       estado:pick(row,cols,["estado"])||"Pendiente",
       origen:"softland",
       origenId:pick(row,cols,["folio","numeroDocumento","numero","documento"]),
+      ...operatingContext(row,cols),
       createdAt:new Date().toISOString()
     }),
     claveDup:"numeroDocumento"

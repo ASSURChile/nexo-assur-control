@@ -6,6 +6,8 @@ alter table public.profiles
   check (
     role in (
       'admin',
+      'gerente_general',
+      'gerente_operaciones_admin',
       'gerencia',
       'comercial',
       'jefe_comercial',

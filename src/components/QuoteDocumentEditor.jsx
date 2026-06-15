@@ -288,9 +288,13 @@ export default function QuoteDocumentEditor({
     window.setTimeout(() => setStatus(""), 1800);
   };
 
-  const save = () => {
-    onSaveDocumento(currentHtml(), templateId);
-    mark("Documento guardado en la cotizacion");
+  const save = async () => {
+    try {
+      const result = await onSaveDocumento(currentHtml(), templateId);
+      mark(result?.cloudVersion ? `Version ${result.cloudVersion} guardada en cloud` : "Documento guardado en la cotizacion");
+    } catch (error) {
+      mark(error.message || "No se pudo guardar el documento");
+    }
   };
 
   const applyTemplate = (nextTemplateId) => {

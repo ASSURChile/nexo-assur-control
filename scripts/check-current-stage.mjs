@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 const checks = [
   ["provider:check", ["run", "provider:check"]],
   ["prod:check", ["run", "prod:check"]],
+  ["hardening:check", ["run", "hardening:check"]],
   ["supabase:schema:check", ["run", "supabase:schema:check"]],
   ["supabase:check", ["run", "supabase:check"]],
   ["supabase:mount:check", ["run", "supabase:mount:check"]],

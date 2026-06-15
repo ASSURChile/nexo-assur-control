@@ -12,7 +12,7 @@ create table if not exists profiles (
   company_id uuid references companies(id) on delete cascade,
   full_name text not null,
   email text not null,
-  role text not null check (role in ('admin','gerencia','comercial','jefe_comercial','operaciones','administrativo_operaciones','supervisor','tecnico','monitoreo','finanzas','almacen','viewer')),
+  role text not null check (role in ('admin','gerente_general','gerente_operaciones_admin','gerencia','comercial','jefe_comercial','operaciones','administrativo_operaciones','supervisor','tecnico','monitoreo','finanzas','almacen','viewer')),
   active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -137,6 +137,21 @@ create table if not exists commercial_packages (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists materials (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  sku text,
+  name text not null,
+  unit text,
+  unit_cost numeric not null default 0,
+  stock numeric not null default 0,
+  source text not null default 'manual',
+  external_id text,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists commercial_package_items (
   id text primary key default gen_random_uuid()::text,
   company_id uuid references companies(id) on delete cascade,
@@ -237,21 +252,6 @@ create table if not exists contractors (
   name text not null,
   status text not null default 'Activo',
   hourly_cost numeric not null default 0,
-  metadata jsonb not null default '{}',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists materials (
-  id text primary key default gen_random_uuid()::text,
-  company_id uuid references companies(id) on delete cascade,
-  sku text,
-  name text not null,
-  unit text,
-  unit_cost numeric not null default 0,
-  stock numeric not null default 0,
-  source text not null default 'manual',
-  external_id text,
   metadata jsonb not null default '{}',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -529,6 +529,168 @@ create table if not exists sync_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists legal_entities (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  name text not null,
+  rut text,
+  status text not null default 'Activa',
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists business_units (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  legal_entity_id text references legal_entities(id),
+  name text not null,
+  code text,
+  status text not null default 'Activa',
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists roles (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  code text not null,
+  name text not null,
+  status text not null default 'Activo',
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists role_permissions (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  role_id text references roles(id) on delete cascade,
+  module_id text not null,
+  action text not null,
+  allowed boolean not null default false,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists profile_permissions (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  profile_id uuid references profiles(id) on delete cascade,
+  module_id text not null,
+  action text not null,
+  allowed boolean not null default false,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists attachments (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  entity_type text not null,
+  entity_id text not null,
+  bucket text not null,
+  storage_path text not null,
+  file_name text,
+  mime_type text,
+  file_size bigint,
+  document_type text not null default 'evidencia',
+  uploaded_by uuid references profiles(id),
+  deleted_at timestamptz,
+  deleted_by uuid references profiles(id),
+  delete_reason text,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists document_templates (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  name text not null,
+  document_type text not null default 'cotizacion',
+  status text not null default 'Activo',
+  template_html text,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists generated_documents (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  template_id text references document_templates(id),
+  attachment_id text references attachments(id),
+  entity_type text not null,
+  entity_id text not null,
+  document_type text not null,
+  status text not null default 'Borrador',
+  generated_by uuid references profiles(id),
+  generated_at timestamptz,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists document_versions (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  generated_document_id text not null references generated_documents(id) on delete cascade,
+  version_number integer not null default 1,
+  attachment_id text references attachments(id),
+  content_html text,
+  created_by uuid references profiles(id),
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists activity_events (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  actor_id uuid references profiles(id),
+  entity_type text not null,
+  entity_id text not null,
+  action text not null,
+  summary text,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists error_logs (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid references companies(id) on delete cascade,
+  profile_id uuid references profiles(id),
+  source text not null default 'frontend',
+  severity text not null default 'error',
+  message text not null,
+  stack text,
+  metadata jsonb not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'clients','sites','opportunities','proposals','quote_templates','quotes',
+    'commercial_packages','quick_quotes','projects','project_tasks',
+    'materials','material_requests','incidents','expenses','billing_milestones',
+    'invoices','payments','accounts_payable','recurring_services',
+    'monitoring_protocols','service_contacts','installed_assets','service_events',
+    'service_billing_expectations','generated_documents'
+  ]
+  loop
+    execute format('alter table public.%I add column if not exists deleted_at timestamptz', t);
+    execute format('alter table public.%I add column if not exists deleted_by uuid references public.profiles(id)', t);
+    execute format('alter table public.%I add column if not exists delete_reason text', t);
+  end loop;
+end $$;
+
 create index if not exists idx_clients_company on clients(company_id);
 create index if not exists idx_app_collections_company on app_collections(company_id);
 create index if not exists idx_sites_client on sites(client_id);
@@ -558,6 +720,18 @@ create index if not exists idx_service_contacts_service on service_contacts(recu
 create index if not exists idx_assets_site on installed_assets(site_id);
 create index if not exists idx_service_events_service on service_events(recurring_service_id);
 create index if not exists idx_service_billing_month on service_billing_expectations(expected_month);
+create index if not exists idx_legal_entities_company on legal_entities(company_id);
+create index if not exists idx_business_units_company on business_units(company_id);
+create unique index if not exists idx_roles_company_code on roles(company_id, lower(code));
+create unique index if not exists idx_role_permissions_unique on role_permissions(company_id, role_id, module_id, action);
+create unique index if not exists idx_profile_permissions_unique on profile_permissions(company_id, profile_id, module_id, action);
+create index if not exists idx_attachments_entity on attachments(company_id, entity_type, entity_id);
+create index if not exists idx_attachments_storage on attachments(bucket, storage_path);
+create index if not exists idx_document_templates_type on document_templates(company_id, document_type, status);
+create index if not exists idx_generated_documents_entity on generated_documents(company_id, entity_type, entity_id);
+create unique index if not exists idx_document_versions_unique on document_versions(company_id, generated_document_id, version_number);
+create index if not exists idx_activity_events_entity on activity_events(company_id, entity_type, entity_id, created_at desc);
+create index if not exists idx_error_logs_company_created on error_logs(company_id, created_at desc);
 
 create or replace function public.touch_updated_at()
 returns trigger
@@ -580,7 +754,9 @@ begin
     'contractors','materials','material_requests','material_request_items',
     'time_entries','incidents','expenses','billing_milestones','invoices',
     'accounts_payable','recurring_services','monitoring_protocols',
-    'installed_assets','service_events','service_billing_expectations'
+    'installed_assets','service_events','service_billing_expectations',
+    'legal_entities','business_units','roles','role_permissions','profile_permissions',
+    'attachments','document_templates','generated_documents','document_versions'
   ]
   loop
     execute format('drop trigger if exists %I on public.%I', 'touch_' || t || '_updated_at', t);

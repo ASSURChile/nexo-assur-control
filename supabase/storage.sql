@@ -28,7 +28,7 @@ create policy "project evidence write operations"
 on storage.objects for insert
 with check (
   bucket_id in ('project-evidence','project-reports','signatures','service-documents')
-  and public.current_role() in ('admin','operaciones','supervisor','tecnico','almacen')
+  and public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','operaciones','supervisor','tecnico','almacen')
   and (storage.foldername(name))[1] = public.current_company_id()::text
 );
 
@@ -37,12 +37,12 @@ create policy "project evidence update operations"
 on storage.objects for update
 using (
   bucket_id in ('project-evidence','project-reports','signatures','service-documents')
-  and public.current_role() in ('admin','operaciones','supervisor')
+  and public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','operaciones','supervisor')
   and (storage.foldername(name))[1] = public.current_company_id()::text
 )
 with check (
   bucket_id in ('project-evidence','project-reports','signatures','service-documents')
-  and public.current_role() in ('admin','operaciones','supervisor')
+  and public.current_role() in ('admin','gerente_general','gerente_operaciones_admin','operaciones','supervisor')
   and (storage.foldername(name))[1] = public.current_company_id()::text
 );
 
@@ -51,6 +51,6 @@ create policy "project evidence delete admin"
 on storage.objects for delete
 using (
   bucket_id in ('project-evidence','project-reports','signatures','service-documents')
-  and public.current_role() in ('admin','operaciones')
+  and public.current_role() in ('admin','gerente_general','operaciones')
   and (storage.foldername(name))[1] = public.current_company_id()::text
 );

@@ -8,3 +8,5 @@ yarn-error.log*
 server/data/*.json
 server/data/*.tmp
 tmp/
+backups/
+supabase/.temp/

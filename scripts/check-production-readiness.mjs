@@ -3,10 +3,12 @@ import { readFile } from "node:fs/promises";
 const files = [
   ".env.example",
   ".env.production.example",
+  ".env.staging.example",
   "public/_redirects",
   "public/_headers",
   "vercel.json",
   "docs/controlled-mvp-publication.md",
+  "docs/production-operations-runbook.md",
   "src/services/authService.js",
   "src/services/bootstrapService.js",
   "src/views/LoginScreen.jsx",
@@ -26,10 +28,12 @@ const contents = new Map(await Promise.all(files.map(async (file) => [file, awai
 
 const env = contents.get(".env.example");
 const prodEnv = contents.get(".env.production.example");
+const stagingEnv = contents.get(".env.staging.example");
 const redirects = contents.get("public/_redirects");
 const headers = contents.get("public/_headers");
 const vercel = contents.get("vercel.json");
 const publicationDoc = contents.get("docs/controlled-mvp-publication.md");
+const opsDoc = contents.get("docs/production-operations-runbook.md");
 const auth = contents.get("src/services/authService.js");
 const bootstrap = contents.get("src/services/bootstrapService.js");
 const login = contents.get("src/views/LoginScreen.jsx");
@@ -46,10 +50,14 @@ assert(env.includes("SUPABASE_SERVICE_ROLE_KEY="), "Falta variable server-side S
 assert(prodEnv.includes("VITE_DATA_PROVIDER=supabase_normalized"), "El ejemplo productivo debe usar Supabase normalizado.");
 assert(prodEnv.includes("VITE_AUTH_MODE=supabase"), "El ejemplo productivo debe usar Supabase Auth.");
 assert(!prodEnv.includes("SUPABASE_SERVICE_ROLE_KEY="), "El ejemplo productivo frontend no debe exponer SUPABASE_SERVICE_ROLE_KEY.");
+assert(stagingEnv.includes("VITE_DATA_PROVIDER=supabase_normalized"), "El ejemplo staging debe usar Supabase normalizado.");
+assert(stagingEnv.includes("VITE_AUTH_MODE=supabase"), "El ejemplo staging debe usar Supabase Auth.");
+assert(!stagingEnv.includes("SUPABASE_SERVICE_ROLE_KEY="), "El ejemplo staging frontend no debe exponer SUPABASE_SERVICE_ROLE_KEY.");
 assert(redirects.includes("/* /index.html 200"), "Cloudflare Pages debe tener fallback SPA en public/_redirects.");
 assert(headers.includes("X-Frame-Options: DENY"), "Cloudflare Pages debe publicar headers basicos de seguridad.");
 assert(publicationDoc.includes("Cloudflare Pages"), "La guia de publicacion debe priorizar Cloudflare Pages.");
 assert(publicationDoc.includes("assur-control.pages.dev"), "La guia debe documentar la URL gratuita esperada.");
+assert(opsDoc.includes("Producción") && opsDoc.includes("Staging"), "Runbook debe documentar ambientes.");
 assert(vercel.includes('"buildCommand": "npm run build"'), "vercel.json debe usar npm run build.");
 assert(vercel.includes('"outputDirectory": "dist"'), "vercel.json debe publicar dist.");
 assert(auth.includes("DEMO_AUTH_ENABLED"), "Auth no tiene interruptor de modo demo.");

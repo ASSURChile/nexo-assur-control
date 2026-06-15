@@ -76,6 +76,54 @@ if (duplicatedImports.length) {
   errors.push(`Imports duplicados en App.jsx: ${[...new Set(duplicatedImports)].join(", ")}.`);
 }
 
+function extractFunctionBody(source, functionName) {
+  const signature = new RegExp(`function\\s+${functionName}\\s*\\(([^)]*)\\)\\s*\\{`, "m").exec(source);
+  if (!signature) return null;
+  const bodyStart = signature.index + signature[0].length;
+  let depth = 1;
+  let inString = false;
+  let quote = "";
+  let escaped = false;
+  for (let i = bodyStart; i < source.length; i += 1) {
+    const ch = source[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === quote) inString = false;
+      continue;
+    }
+    if (ch === "\"" || ch === "'" || ch === "`") {
+      inString = true;
+      quote = ch;
+      continue;
+    }
+    if (ch === "{") depth += 1;
+    if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) return { params: signature[1], body: source.slice(bodyStart, i) };
+    }
+  }
+  return null;
+}
+
+const tabFunctions = [...app.matchAll(/function\s+([A-Z][A-Za-z0-9]+Tab)\s*\(/g)].map((match) => match[1]);
+for (const functionName of tabFunctions) {
+  const fn = extractFunctionBody(app, functionName);
+  if (!fn) continue;
+  const params = fn.params;
+  const body = fn.body;
+  const riskyOuterVars = [...body.matchAll(/\b(sorted[A-Z][A-Za-z0-9]*)\b/g)]
+    .map((match) => match[1])
+    .filter((name, index, arr) => arr.indexOf(name) === index);
+  for (const name of riskyOuterVars) {
+    const declared = new RegExp(`\\b(?:const|let|var)\\s+${name}\\b`).test(body);
+    const received = new RegExp(`\\b${name}\\b`).test(params);
+    if (!declared && !received) {
+      errors.push(`${functionName} usa ${name} sin declararlo ni recibirlo por props. Puede causar pantalla blanca en subpestañas.`);
+    }
+  }
+}
+
 function listFiles(dir) {
   const entries = readdirSync(dir);
   const files = [];

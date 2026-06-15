@@ -7,6 +7,9 @@ import { calcProjectFinance } from "../domain/finance";
 import { COL_EST_INC, COL_PRIO } from "../domain/operationsCatalogs";
 import { COL_SERVICIO, buildServicioDesdeProyecto, servicioTieneProtocoloCompleto } from "../domain/recurringServices";
 import { dataService } from "../services/dataService";
+import { createActivityEvent, listActivityEvents } from "../services/activityEventService";
+import { getAttachmentSignedUrl, uploadAttachment } from "../services/attachmentService";
+import { enqueueOfflineAction } from "../services/offlineQueueService";
 import assurHexDark from "../assets/brand/assur-hex-solid-darkOnLight.svg";
 import assurHexWhite from "../assets/brand/assur-hex-solid-whiteOnDark.svg";
 
@@ -16,6 +19,97 @@ const fmtPct = (n) => (n * 100).toFixed(1) + "%";
 const fmtMil = (v) => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : v >= 1e3 ? "$" + (v / 1e3).toFixed(0) + "K" : "$" + Math.round(v || 0);
 const COL_HITO = { Pendiente: (C) => C.textM, "Condición cumplida": (C) => C.amber, Facturado: (C) => C.blue, Cobrado: (C) => C.green, Vencido: (C) => C.red };
 function Empty({ C, icon = "◈", title, sub, action }) { return <EmptyState C={C} icon={icon} title={title} sub={sub} action={action} />; }
+
+const evidenceSrc = (item = {}) => item.previewUrl || item.signedUrl || item.url || item.archivoBase64 || item.miniatura || "";
+const signedUrlFromResponse = (res) => res?.signedURL || res?.signedUrl || res?.url || res?.signed_url || "";
+const safeFileName = (name = "evidencia") => String(name || "evidencia").replace(/[^\w.\-]+/g, "-");
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => resolve(ev.target.result);
+    reader.onerror = () => reject(reader.error || new Error("No se pudo leer el archivo."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function canvasToBlob(canvas, type = "image/png") {
+  return new Promise((resolve) => canvas?.toBlob(resolve, type));
+}
+
+async function buildEvidenceRecord({ file, proyecto, tarea, session, primaryTechId, comentario, documentType = "foto_avance" }) {
+  const now = new Date().toISOString();
+  const baseRecord = {
+    id: newId(),
+    proyectoId: proyecto.id,
+    tareaId: tarea?.id || undefined,
+    tecnicoId: primaryTechId || session.tecnicoId || session.userId,
+    usuarioId: session.userId,
+    tecnicoNombre: session.nombre,
+    comentario,
+    fecha: now,
+    fileName: file?.name || "",
+    mimeType: file?.type || "",
+    fileSize: file?.size || null,
+    documentType,
+  };
+
+  if (session?.companyId && file) {
+    try {
+      const attachment = await uploadAttachment("project", proyecto.id, file, {
+        documentType,
+        proyectoId: proyecto.id,
+        tareaId: tarea?.id || null,
+        comentario,
+        tecnicoId: primaryTechId || session.tecnicoId || session.userId,
+      });
+      const signed = await getAttachmentSignedUrl(attachment).catch(() => null);
+      await createActivityEvent("project", proyecto.id, "attachment_uploaded", {
+        summary: `Evidencia subida por ${session.nombre || "técnico"}`,
+        metadata: { attachmentId: attachment?.id, documentType, tareaId: tarea?.id || null },
+      }).catch(() => null);
+      return {
+        ...baseRecord,
+        id: attachment?.id || baseRecord.id,
+        attachmentId: attachment?.id || "",
+        storageBucket: attachment?.bucket || "",
+        storagePath: attachment?.storage_path || "",
+        signedUrl: signedUrlFromResponse(signed),
+        origen: "storage",
+        pendienteStorage: false,
+      };
+    } catch (error) {
+      enqueueOfflineAction({
+        type: "attachment_upload_pending",
+        entityType: "project",
+        entityId: proyecto.id,
+        documentType,
+        metadata: { tareaId: tarea?.id || null, fileName: file.name, reason: error.message },
+      });
+    }
+  }
+
+  const dataUrl = file ? await readFileAsDataUrl(file) : "";
+  return {
+    ...baseRecord,
+    archivoBase64: dataUrl,
+    miniatura: dataUrl,
+    origen: "local_base64",
+    pendienteStorage: true,
+  };
+}
+
+function EvidenceThumb({ C, foto, height = 130, compact = false }) {
+  const src = evidenceSrc(foto);
+  if (src) return <img src={src} alt="" style={{ width: "100%", height, objectFit: "cover", display: "block" }} />;
+  return <div style={{ height, width: "100%", background: C.bg2, display: "flex", alignItems: "center", justifyContent: "center", padding: compact ? 6 : 12, boxSizing: "border-box", textAlign: "center" }}>
+    <div>
+      <div style={{ fontSize: compact ? 18 : 24, color: C.blue, lineHeight: 1 }}>▧</div>
+      <div style={{ fontSize: compact ? 9 : 11, color: C.textM, fontFamily: ff, marginTop: 4 }}>Evidencia en Storage</div>
+      {!compact && <div style={{ fontSize: 10, color: C.textS, fontFamily: ff, marginTop: 2, wordBreak: "break-word" }}>{foto?.fileName || foto?.storagePath || "archivo cloud"}</div>}
+    </div>
+  </div>;
+}
 
 function ProyectoEnTerreno({C,proyecto,tecnicos,contratistas,registrosHoras,incidencias,fichajes,params,onSaveRegistroHora,onSaveIncidencia,onSaveProyecto,readonly}){
   const [vista,setVista]=useState("bandeja"); // bandeja | actividad | fotos | solicitudes
@@ -234,11 +328,12 @@ function ProyectoEnTerreno({C,proyecto,tecnicos,contratistas,registrosHoras,inci
         ?<EmptyState C={C} icon="·" title="Sin fotos" sub="Las fotos aparecerán aquí cuando el técnico las suba desde la app móvil."/>
         :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
           {fotos.map((f,i)=><div key={f.id||i} style={{...cardSt,padding:0,overflow:"hidden"}}>
-            <img src={f.archivoBase64||f.miniatura} alt="" style={{width:"100%",height:140,objectFit:"cover",display:"block"}}/>
+            <EvidenceThumb C={C} foto={f} height={140}/>
             <div style={{padding:"8px 10px"}}>
               <div style={{fontSize:10,color:C.textM,fontFamily:ff}}>{f.fecha?.slice(0,16).replace("T"," ")||"—"}</div>
               {f.comentario&&<div style={{fontSize:11,color:C.text,fontFamily:ff,marginTop:2}}>{f.comentario}</div>}
               <div style={{fontSize:10,color:C.blue,fontFamily:ff,marginTop:3}}>{f.tecnicoNombre||"—"}</div>
+              {f.pendienteStorage&&<div style={{fontSize:10,color:C.amber,fontFamily:ff,marginTop:3}}>Pendiente de subir a Storage</div>}
             </div>
           </div>)}
         </div>
@@ -671,8 +766,36 @@ function ReporteProyecto({C,proyecto,clientes,instalaciones,tecnicos,contratista
   const totalCostosReal=(proyecto.costos||[]).reduce((s,c)=>s+(c.total||0),0);
   const costoEst=proyecto.costoEstimado||0;
 
-  const timeline=[...(proyecto.timeline||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  const ICONS_TL={tarea:"📋",tarea_eliminada:"🗑",fichaje:"⏱",foto:"📷",incidencia:"⚠️",cierre:"🔐",reapertura:"🔓",material:"📦",adicional:"📋",default:"📌"};
+  const [cloudEvents,setCloudEvents]=useState([]);
+  const [cloudStatus,setCloudStatus]=useState("idle");
+
+  useEffect(()=>{
+    let alive=true;
+    setCloudStatus("loading");
+    listActivityEvents("project",proyecto.id,120)
+      .then(rows=>{if(alive){setCloudEvents(rows||[]);setCloudStatus("ok");}})
+      .catch(()=>{if(alive){setCloudEvents([]);setCloudStatus("error");}});
+    return()=>{alive=false;};
+  },[proyecto.id]);
+
+  const localTimeline=(proyecto.timeline||[]).map((ev,i)=>({
+    id:ev.id||`local-${i}-${ev.fecha||""}`,
+    fecha:ev.fecha,
+    tipo:ev.tipo,
+    desc:ev.desc,
+    usuario:ev.usuario,
+    origen:"local",
+  }));
+  const cloudTimeline=(cloudEvents||[]).map(ev=>({
+    id:ev.id,
+    fecha:ev.created_at,
+    tipo:ev.action,
+    desc:ev.summary||ev.metadata?.summary||ev.action,
+    usuario:ev.metadata?.usuario||ev.metadata?.tecnicoNombre||ev.actor_id||"",
+    origen:"cloud",
+  }));
+  const timeline=[...cloudTimeline,...localTimeline].sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
+  const ICONS_TL={tarea:"📋",tarea_eliminada:"🗑",fichaje:"⏱",foto:"📷",attachment_uploaded:"📷",signature_uploaded:"✍",incidencia:"⚠️",cierre:"🔐",reapertura:"🔓",material:"📦",adicional:"📋",default:"📌"};
 
   const secciones=[["resumen","📊 Resumen"],["tareas","📋 Tareas"],["fichajes","⏱ Fichajes"],["incidencias","⚠️ Incidencias"],["fotos","📷 Fotos"],["solicitudes","📦 Solicitudes"],["timeline","🕐 Línea de tiempo"],["cierre","🔐 Cierre"]];
 
@@ -807,11 +930,12 @@ function ReporteProyecto({C,proyecto,clientes,instalaciones,tecnicos,contratista
           <div style={{fontSize:12,color:C.textM,fontFamily:ff,marginBottom:12}}>{proyecto.fotos.length} foto{proyecto.fotos.length!==1?"s":""} de avance</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
             {proyecto.fotos.map((f,i)=><div key={f.id||i} style={{borderRadius:8,overflow:"hidden",border:"1px solid "+C.border,background:C.bg1}}>
-              <img src={f.archivoBase64||f.miniatura} alt="" style={{width:"100%",height:130,objectFit:"cover",display:"block"}}/>
+              <EvidenceThumb C={C} foto={f} height={130}/>
               <div style={{padding:"6px 8px"}}>
                 <div style={{fontSize:10,color:C.textM,fontFamily:ff}}>{f.fecha?.slice(0,16).replace("T"," ")||"—"}</div>
                 {f.comentario&&<div style={{fontSize:11,color:C.text,fontFamily:ff,marginTop:2}}>{f.comentario}</div>}
                 <div style={{fontSize:10,color:C.blue,fontFamily:ff}}>👷 {f.tecnicoNombre||"—"}</div>
+                {f.pendienteStorage&&<div style={{fontSize:10,color:C.amber,fontFamily:ff}}>Pendiente Storage</div>}
               </div>
             </div>)}
           </div>
@@ -859,14 +983,28 @@ function ReporteProyecto({C,proyecto,clientes,instalaciones,tecnicos,contratista
 
     {/* ── LÍNEA DE TIEMPO ── */}
     {seccion==="timeline"&&<div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+        <div style={{fontSize:12,color:C.textM,fontFamily:ff}}>
+          Historial combinado: {localTimeline.length} evento{localTimeline.length!==1?"s":""} local{localTimeline.length!==1?"es":""} · {cloudEvents.length} evento{cloudEvents.length!==1?"s":""} cloud
+        </div>
+        <Bdg color={cloudStatus==="ok"?C.green:cloudStatus==="loading"?C.amber:C.textM} small>
+          {cloudStatus==="ok"?"Cloud sincronizado":cloudStatus==="loading"?"Leyendo cloud":"Solo historial local"}
+        </Bdg>
+      </div>
+      {cloudStatus==="error"&&<div style={{padding:"8px 10px",background:C.amber+"11",border:"1px solid "+C.amber+"33",borderRadius:6,color:C.amber,fontSize:11,fontFamily:ff,marginBottom:12}}>
+        No se pudo leer `activity_events`. El historial local sigue disponible y la operación no se bloquea.
+      </div>}
       {timeline.length===0?<EmptyState C={C} icon="🕐" title="Sin historial" sub="Las acciones del proyecto aparecerán aquí cronológicamente."/>
         :<div style={{position:"relative",paddingLeft:32}}>
           <div style={{position:"absolute",left:12,top:0,bottom:0,width:2,background:C.border}}/>
           {timeline.map((ev,i)=>(
-            <div key={i} style={{position:"relative",marginBottom:14}}>
+            <div key={ev.id||i} style={{position:"relative",marginBottom:14}}>
               <div style={{position:"absolute",left:-26,top:3,width:12,height:12,borderRadius:6,background:C.bg1,border:"2px solid "+C.blue,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8}}>{ICONS_TL[ev.tipo]||ICONS_TL.default}</div>
               <div style={{background:C.bg1,border:"1px solid "+C.border,borderRadius:6,padding:"8px 12px"}}>
-                <div style={{fontSize:10,color:C.textM,fontFamily:"monospace",marginBottom:3}}>{ev.fecha?.slice(0,16).replace("T"," ")||"—"}</div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:3}}>
+                  <div style={{fontSize:10,color:C.textM,fontFamily:"monospace"}}>{ev.fecha?.slice(0,16).replace("T"," ")||"—"}</div>
+                  <span style={{fontSize:9,padding:"1px 6px",borderRadius:999,background:ev.origen==="cloud"?C.green+"16":C.bg2,color:ev.origen==="cloud"?C.green:C.textM,fontFamily:ff,fontWeight:700,textTransform:"uppercase"}}>{ev.origen==="cloud"?"cloud":"local"}</span>
+                </div>
                 <div style={{fontSize:12,color:C.text,fontFamily:ff}}>{ev.desc}</div>
                 {ev.usuario&&<div style={{fontSize:10,color:C.textM,fontFamily:ff,marginTop:2}}>Por: {ev.usuario}</div>}
               </div>
@@ -936,6 +1074,12 @@ function ReporteProyecto({C,proyecto,clientes,instalaciones,tecnicos,contratista
                     try{doc.addImage(ci.firmaBase64,"PNG",margin,y,80,30);}catch(e){}
                     y+=36;doc.setDrawColor(15,23,42);doc.line(margin,y,margin+80,y);y+=5;
                     doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(100,116,139);doc.text(`${ci.receptorNombre||"—"} · ${ci.receptorRut||"—"}`,margin,y);y+=8;
+                  } else if(ci.firmaAttachmentId||ci.firmaStoragePath) {
+                    y+=4;doc.setDrawColor(226,232,240);doc.line(margin,y,pageW-margin,y);y+=8;
+                    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(15,23,42);doc.text("FIRMA DEL RECEPTOR:",margin,y);y+=6;
+                    doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(100,116,139);
+                    doc.text("Firma almacenada como evidencia digital en Storage.",margin,y);y+=5;
+                    doc.text(`${ci.receptorNombre||"—"} · ${ci.receptorRut||"—"}`,margin,y);y+=8;
                   }
                   // Footer
                   doc.setFillColor(248,250,252);doc.rect(0,280,pageW,17,"F");
@@ -965,11 +1109,18 @@ function ReporteProyecto({C,proyecto,clientes,instalaciones,tecnicos,contratista
                 ))}
               </div>
             </div>
-            {proyecto.cierreTecnico.firmaBase64&&<div style={{marginTop:14}}>
+            {(proyecto.cierreTecnico.firmaBase64||proyecto.cierreTecnico.firmaSignedUrl||proyecto.cierreTecnico.firmaAttachmentId||proyecto.cierreTecnico.firmaStoragePath)&&<div style={{marginTop:14}}>
               <div style={{fontSize:11,fontWeight:700,color:C.textM,fontFamily:ff,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Firma del receptor</div>
               <div style={{background:"#fff",border:"1px solid "+C.border,borderRadius:6,padding:8,display:"inline-block"}}>
-                <img src={proyecto.cierreTecnico.firmaBase64} alt="Firma digital" style={{maxWidth:300,maxHeight:120,display:"block"}}/>
+                {proyecto.cierreTecnico.firmaBase64||proyecto.cierreTecnico.firmaSignedUrl
+                  ? <img src={proyecto.cierreTecnico.firmaBase64||proyecto.cierreTecnico.firmaSignedUrl} alt="Firma digital" style={{maxWidth:300,maxHeight:120,display:"block"}}/>
+                  : <div style={{minWidth:260,maxWidth:320,padding:"22px 18px",textAlign:"center",background:C.bg2,borderRadius:5}}>
+                    <div style={{fontSize:22,color:C.blue,lineHeight:1}}>▧</div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:ff,marginTop:6}}>Firma guardada en Storage</div>
+                    <div style={{fontSize:10,color:C.textM,fontFamily:ff,marginTop:3,wordBreak:"break-word"}}>{proyecto.cierreTecnico.firmaFileName||proyecto.cierreTecnico.firmaStoragePath||"evidencia cloud"}</div>
+                  </div>}
               </div>
+              {proyecto.cierreTecnico.firmaPendienteStorage&&<div style={{fontSize:11,color:C.amber,fontFamily:ff,marginTop:6}}>Pendiente de sincronizar con Storage.</div>}
             </div>}
             {proyecto.cierreTecnico.notasFinales&&<div style={{marginTop:10,padding:"10px 12px",background:C.bg2,borderRadius:5,border:"1px solid "+C.border,fontSize:12,color:C.textS,fontFamily:ff}}>
               <b style={{color:C.text}}>Notas finales:</b> {proyecto.cierreTecnico.notasFinales}
@@ -1059,38 +1210,43 @@ export function MobileApp({C,session,rol,proyectos,tecnicos,contratistas,materia
     if(goActiveFichaje())return;
     if(proyAsignados[0])goProyecto(proyAsignados[0]);
   };
+  const handleMobileLogout=(event)=>{
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    onLogout?.();
+  };
 
   // Colores móvil de alto contraste, pensados para uso en terreno.
   const MC=C.isLight
-    ?{...C,bg:"#F4F7FA",card:"#FFFFFF",border:"#D8E1EA",text:"#162334",muted:"#627286",blue:"#1767A6",green:"#198754",amber:"#B7791F",red:"#C2413A",purple:"#6D4BC3",ink:"#0B1724"}
-    :{...C,bg:"#0B1220",card:"#182232",border:"#2A3A4F",text:"#F2F6FA",muted:"#A8B5C6",blue:"#64B5F6",green:"#59D38C",amber:"#F3C95F",red:"#F47B73",purple:"#B395F2",ink:"#F8FAFC"};
+    ?{...C,bg:"#F6F7F9",card:"#FFFFFF",border:"#DCE4EC",text:"#162334",muted:"#64748B",blue:"#1767A6",orange:"#E17327",orangeD:"#C55A1B",green:"#198754",amber:"#B7791F",red:"#C2413A",purple:"#6D4BC3",ink:"#0B1724"}
+    :{...C,bg:"#0D1724",card:"#172334",border:"#2A3A4F",text:"#F2F6FA",muted:"#A8B5C6",blue:"#64B5F6",orange:"#F28A3D",orangeD:"#D96D22",green:"#59D38C",amber:"#F3C95F",red:"#F47B73",purple:"#B395F2",ink:"#F8FAFC"};
   const isDark=!C.isLight;
 
-  return <div style={{fontFamily:ff2,background:isDark?MC.bg:"#F4F7FA",minHeight:"100vh",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
+  return <div style={{fontFamily:ff2,background:MC.bg,minHeight:"100vh",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
 
-    <div style={{background:isDark?"#08111F":"#101C2B",padding:"18px 18px 20px",borderBottom:"1px solid "+(isDark?MC.border:"#27384A"),position:"sticky",top:0,zIndex:40,boxShadow:isDark?"none":"0 10px 24px rgba(15,23,42,0.14)"}}>
+    <div style={{background:isDark?"linear-gradient(135deg,#101A27,#0B1220)":"linear-gradient(135deg,#C55A1B,#E17327)",padding:"18px 18px 20px",borderBottom:"1px solid "+(isDark?MC.border:"#D86921"),position:"sticky",top:0,zIndex:40,boxShadow:isDark?"none":"0 10px 24px rgba(197,90,27,0.22)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
         <img src={isDark?assurHexWhite:assurHexDark} alt="ASSUR" style={{width:28,height:28,objectFit:"contain",display:"block"}}/>
         <div style={{display:"flex",flexDirection:"column",gap:2}}>
-          <span style={{fontSize:14,fontWeight:900,color:"#FFFFFF",letterSpacing:"0.22em",lineHeight:1}}>ASSUR</span>
-          <span style={{fontSize:8,fontWeight:800,color:"#83C9EE",letterSpacing:"0.32em",lineHeight:1}}>CONTROL</span>
+          <span style={{fontSize:16,fontWeight:950,color:"#FFFFFF",letterSpacing:"0.2em",lineHeight:0.96,transform:"scaleX(1.05)",transformOrigin:"left center"}}>NEXO</span>
+          <span style={{fontSize:7.5,fontWeight:750,color:isDark?"#F4A259":"rgba(255,255,255,0.78)",letterSpacing:"0.14em",lineHeight:1,textTransform:"uppercase"}}>por ASSUR</span>
         </div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        {fichajeActivo&&<span style={{fontSize:11,background:"rgba(31,138,85,0.16)",color:"#7CE2AD",padding:"5px 10px",borderRadius:20,fontWeight:850}}>EN CURSO</span>}
-        <span style={{fontSize:15,color:"#83C9EE"}}>{rolIcon(rol)}</span>
+        {fichajeActivo&&<span style={{fontSize:11,background:"rgba(255,255,255,0.16)",color:"#FFFFFF",padding:"5px 10px",borderRadius:20,fontWeight:850}}>EN CURSO</span>}
+        <span style={{fontSize:15,color:"#FFFFFF"}}>{rolIcon(rol)}</span>
       </div>
       </div>
       <div style={{marginTop:18}}>
-        <div style={{fontSize:12,color:"#8FA4BB",fontWeight:800,textTransform:"capitalize"}}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</div>
+        <div style={{fontSize:12,color:isDark?"#8FA4BB":"rgba(255,255,255,0.76)",fontWeight:800,textTransform:"capitalize"}}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</div>
         <div style={{fontSize:24,fontWeight:900,color:"#FFFFFF",lineHeight:1.1,marginTop:2}}>Hola, {session.nombre.split(" ")[0]}</div>
       </div>
     </div>
 
     {/* CONTENIDO */}
     <div style={{flex:1,overflowY:"auto",paddingBottom:80}}>
-      {screen==="home"&&<MobileHome C={MC} session={session} sessionIds={sessionIds} rol={rol} proyAsignados={proyAsignados} fichajeActivo={fichajeActivo} fichajes={fichajes} onGoProyecto={goProyecto} onGoActiveFichaje={goActiveFichaje} isDark={isDark}/>}
+      {screen==="home"&&<MobileHome C={MC} session={session} sessionIds={sessionIds} rol={rol} proyAsignados={proyAsignados} fichajeActivo={fichajeActivo} fichajes={fichajes} incidencias={incidencias} onGoProyecto={goProyecto} onGoActiveFichaje={goActiveFichaje} isDark={isDark}/>}
       {screen==="proyecto"&&selProy&&<MobileProyecto C={MC} proyecto={selProy} session={session} personal={personal} fichajes={fichajes.filter(f=>f.proyectoId===selProy.id)} incidencias={incidencias.filter(i=>i.proyectoId===selProy.id)} materiales={materiales} instalacion={(instalaciones||[]).find(i=>i.id===selProy.instalacionId)||null} fichajeActivo={fichajeActivo} initialAction={initialAction} onActionConsumed={()=>setInitialAction(null)} onGoTarea={goTarea} onSaveProyecto={p=>{onSaveProyecto(p);setSelProy(p);}} onSaveFichaje={onSaveFichaje} onSaveIncidencia={onSaveIncidencia} onSaveProyectoFoto={onSaveProyectoFoto} onSaveSolicitud={onSaveSolicitud} onGoBack={goHome} onGoCierre={()=>setScreen("cierre")} isDark={isDark}/>}
       {screen==="tarea"&&selTarea&&selProy&&<MobileTarea C={MC} tarea={selTarea} proyecto={selProy} session={session} primaryTechId={primaryTechId} personal={personal} fichajes={fichajes.filter(f=>f.tareaId===selTarea.id&&sessionIds.includes(f.tecnicoId))} fichajeActivo={fichajeActivo} materiales={materiales} instalacion={(instalaciones||[]).find(i=>i.id===selProy.instalacionId)||null} onSaveProyecto={p=>{onSaveProyecto(p);setSelProy(p);}} onSaveFichaje={onSaveFichaje} onSaveProyectoFoto={onSaveProyectoFoto} onGoBack={()=>setScreen("proyecto")} isDark={isDark}/>}
       {screen==="cierre"&&selProy&&<MobileCierre C={MC} proyecto={selProy} session={session} fichajes={fichajes.filter(f=>f.proyectoId===selProy.id)} onSaveProyecto={p=>{onSaveProyecto(p);setSelProy(p);setScreen("proyecto");}} onGoBack={()=>setScreen("proyecto")} isDark={isDark}/>}
@@ -1102,11 +1258,11 @@ export function MobileApp({C,session,rol,proyectos,tecnicos,contratistas,materia
       {[["home","⌂","Inicio"],["proyecto","▤","Proyectos"],["perfil","○","Perfil"]].map(([s,ic,lbl])=>{
         const active=(screen==="home"&&s==="home")||(["proyecto","tarea","cierre"].includes(screen)&&s==="proyecto")||(screen==="perfil"&&s==="perfil");
         return <button key={s} onClick={()=>s==="proyecto"?goFirstProject():s==="perfil"?setScreen("perfil"):goHome()} style={{flex:1,padding:"10px 4px 8px",background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-          <span style={{fontSize:22,color:active?MC.blue:MC.muted}}>{ic}</span>
-          <span style={{fontSize:9,fontWeight:600,color:active?MC.blue:MC.muted,fontFamily:ff2,letterSpacing:"0.05em",textTransform:"uppercase"}}>{lbl}</span>
+          <span style={{fontSize:22,color:active?MC.orange:MC.muted}}>{ic}</span>
+          <span style={{fontSize:9,fontWeight:600,color:active?MC.orange:MC.muted,fontFamily:ff2,letterSpacing:"0.04em",textTransform:"uppercase"}}>{lbl}</span>
         </button>
       })}
-      <button onClick={onLogout} style={{flex:1,padding:"10px 4px 8px",background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+      <button type="button" onClick={handleMobileLogout} onPointerUp={handleMobileLogout} style={{flex:1,padding:"10px 4px 8px",background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
         <span style={{fontSize:22,color:MC.muted}}>↪</span>
         <span style={{fontSize:9,fontWeight:600,color:MC.muted,fontFamily:ff2,textTransform:"uppercase"}}>Salir</span>
       </button>
@@ -1115,7 +1271,7 @@ export function MobileApp({C,session,rol,proyectos,tecnicos,contratistas,materia
 }
 
 // ─── MOBILE HOME ───────────────────────────────────────────────────────────
-function MobileHome({C,session,sessionIds=[],rol,proyAsignados,fichajeActivo,fichajes,onGoProyecto,onGoActiveFichaje,isDark}){
+function MobileHome({C,session,sessionIds=[],rol,proyAsignados,fichajeActivo,fichajes,incidencias=[],onGoProyecto,onGoActiveFichaje,isDark}){
   const hoy=new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"});
   const horasHoy=fichajes.filter(f=>{
     const d=f.inicio?.slice(0,10);
@@ -1124,6 +1280,8 @@ function MobileHome({C,session,sessionIds=[],rol,proyAsignados,fichajeActivo,fic
   const esTareaVisible=t=>sessionIds.includes(t.asignadoAId)||(!t.asignadoAId&&!t.asignadoA);
   const proyectoActual=proyAsignados.find(p=>(p.tareas||[]).some(t=>esTareaVisible(t)&&t.estado==="En curso"))||proyAsignados[0];
   const tareasPendientes=proyAsignados.flatMap(p=>(p.tareas||[]).filter(t=>esTareaVisible(t)&&t.estado!=="Completada"));
+  const incidenciasAbiertas=incidencias.filter(i=>i.estado!=="Cerrada"&&proyAsignados.some(p=>p.id===i.proyectoId));
+  const materialesPendientes=proyAsignados.reduce((sum,p)=>sum+(p.solicitudesMaterial||[]).filter(s=>["pendiente","Pendiente"].includes(s.estado||"pendiente")).length,0);
 
   const primeraTarea=proyectoActual?(proyectoActual.tareas||[]).find(t=>esTareaVisible(t)&&t.estado==="En curso")||(proyectoActual.tareas||[]).find(t=>esTareaVisible(t)&&t.estado!=="Completada"):null;
   const quickProjectAction=action=>{
@@ -1133,16 +1291,27 @@ function MobileHome({C,session,sessionIds=[],rol,proyAsignados,fichajeActivo,fic
 
   return <div style={{padding:"16px 16px 22px"}}>
     <div style={{marginBottom:14}}>
-      <div style={{fontSize:11,color:C.blue,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:900,marginBottom:5}}>Mi jornada</div>
-      <div style={{fontSize:21,fontWeight:900,color:C.text,fontFamily:"'Inter',sans-serif",lineHeight:1.15}}>Trabajo asignado</div>
-      <div style={{fontSize:14,color:C.muted,fontFamily:"'Inter',sans-serif",marginTop:4,textTransform:"capitalize"}}>{hoy}</div>
+      <div style={{fontSize:11,color:C.orange||C.blue,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:900,marginBottom:5}}>Mi jornada</div>
+      <div style={{fontSize:23,fontWeight:950,color:C.text,fontFamily:"'Inter',sans-serif",lineHeight:1.12}}>Trabajo de terreno</div>
+      <div style={{fontSize:14,color:C.muted,fontFamily:"'Inter',sans-serif",marginTop:4,textTransform:"capitalize"}}>{hoy} · {fichajeActivo?"En terreno":"Jornada libre"}</div>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1.25fr 1fr",gap:10,marginBottom:14}}>
+      <div style={{background:fichajeActivo?C.green+"16":(C.orange||C.blue)+"12",border:"1px solid "+(fichajeActivo?C.green:(C.orange||C.blue))+"44",borderRadius:14,padding:"13px 14px"}}>
+        <div style={{fontSize:11,color:C.muted,fontWeight:900,textTransform:"uppercase",letterSpacing:"0.08em",fontFamily:"'Inter',sans-serif"}}>Estado</div>
+        <div style={{fontSize:18,color:fichajeActivo?C.green:(C.orange||C.blue),fontWeight:950,fontFamily:"'Inter',sans-serif",marginTop:5}}>{fichajeActivo?"Fichaje activo":"Libre"}</div>
+      </div>
+      <div style={{background:isDark?"#142033":"#fff",border:"1px solid "+C.border,borderRadius:14,padding:"13px 14px"}}>
+        <div style={{fontSize:11,color:C.muted,fontWeight:900,textTransform:"uppercase",letterSpacing:"0.08em",fontFamily:"'Inter',sans-serif"}}>Horas hoy</div>
+        <div style={{fontSize:18,color:C.green,fontWeight:950,fontFamily:"'Inter',sans-serif",marginTop:5}}>{horasHoy.toFixed(1)}h</div>
+      </div>
     </div>
 
     {proyectoActual
       ?<button onClick={()=>onGoProyecto(proyectoActual)} style={{width:"100%",textAlign:"left",background:isDark?"#142033":"#fff",border:"1px solid "+C.border,borderRadius:14,padding:"18px",boxShadow:isDark?"0 10px 24px rgba(0,0,0,0.22)":"0 12px 30px rgba(20,35,55,0.08)",cursor:"pointer",marginBottom:14}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:14}}>
           <div>
-            <div style={{fontSize:10,color:C.blue,fontWeight:800,letterSpacing:"0.14em",fontFamily:"'Inter',sans-serif",textTransform:"uppercase",marginBottom:6}}>Proyecto actual</div>
+            <div style={{fontSize:10,color:C.orange||C.blue,fontWeight:800,letterSpacing:"0.1em",fontFamily:"'Inter',sans-serif",textTransform:"uppercase",marginBottom:6}}>Proyecto actual</div>
             <div style={{fontSize:22,fontWeight:900,color:C.text,fontFamily:"'Inter',sans-serif",lineHeight:1.15}}>{proyectoActual.nombre}</div>
             <div style={{fontSize:13,color:C.muted,fontFamily:"'Inter',sans-serif",marginTop:5}}>{proyectoActual.codigo||proyectoActual.numero||"Sin código"}</div>
           </div>
@@ -1158,7 +1327,7 @@ function MobileHome({C,session,sessionIds=[],rol,proyAsignados,fichajeActivo,fic
             <div style={{fontSize:24,color:C.green,fontWeight:800}}>{horasHoy.toFixed(1)}h</div>
           </div>
         </div>
-        <div style={{width:"100%",background:C.blue,borderRadius:11,padding:"15px 16px",boxSizing:"border-box",textAlign:"center",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"'Inter',sans-serif",letterSpacing:"0.02em"}}>Continuar trabajo</div>
+        <div style={{width:"100%",background:`linear-gradient(135deg, ${C.orangeD||C.orange||C.blue}, ${C.orange||C.blue})`,borderRadius:12,padding:"15px 16px",boxSizing:"border-box",textAlign:"center",color:"#fff",fontSize:15,fontWeight:900,fontFamily:"'Inter',sans-serif",letterSpacing:"0.02em",boxShadow:"0 12px 24px "+(C.orange||C.blue)+"2E"}}>Continuar trabajo</div>
       </button>
       :<div style={{textAlign:"center",padding:"34px 20px",background:isDark?"#142033":"#fff",borderRadius:14,border:"1px dashed "+C.border,marginBottom:14}}>
         <div style={{fontSize:14,fontWeight:800,color:C.text,fontFamily:"'Inter',sans-serif"}}>Sin proyectos asignados</div>
@@ -1167,24 +1336,24 @@ function MobileHome({C,session,sessionIds=[],rol,proyAsignados,fichajeActivo,fic
 
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:18}}>
       {[
-        {l:"Fichaje",v:fichajeActivo?"Activo":"Libre",c:fichajeActivo?C.green:C.blue},
-        {l:"Proyectos",v:proyAsignados.length,c:C.blue},
-        {l:"Pendientes",v:tareasPendientes.length,c:tareasPendientes.length?C.amber:C.green},
+        {l:"Tareas",v:tareasPendientes.length,c:tareasPendientes.length?C.amber:C.green},
+        {l:"Incidencias",v:incidenciasAbiertas.length,c:incidenciasAbiertas.length?C.red:C.green},
+        {l:"Materiales",v:materialesPendientes,c:materialesPendientes?C.purple:C.green},
       ].map(k=><div key={k.l} style={{background:isDark?"#142033":"#fff",border:"1px solid "+C.border,borderRadius:12,padding:"12px 10px"}}>
         <div style={{fontSize:10,color:C.muted,fontFamily:"'Inter',sans-serif",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.08em"}}>{k.l}</div>
         <div style={{fontSize:String(k.v).length>6?15:20,fontWeight:800,color:k.c,fontFamily:"'Inter',sans-serif",marginTop:5}}>{k.v}</div>
       </div>)}
     </div>
 
-    <div style={{fontSize:12,fontWeight:900,color:C.muted,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Accesos rápidos</div>
+    <div style={{fontSize:12,fontWeight:900,color:C.muted,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Acciones de terreno</div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20}}>
-      {[["▣","Fichar jornada",C.green,"fichaje"],["◉","Subir foto",C.blue,"foto"],["□","Pedir material",C.purple,"material"],["!","Reportar incidencia",C.amber,"incidencia"],["✓","Cierre técnico",C.green,"cierre"]].map(([ic,l,c,action])=><button key={l} onClick={()=>quickProjectAction(action)} disabled={!proyectoActual} style={{background:action==="fichaje"?C.blue:(isDark?"#142033":"#fff"),border:"1px solid "+(action==="fichaje"?C.blue:C.border),borderRadius:14,padding:"14px 12px",textAlign:"left",cursor:proyectoActual?"pointer":"not-allowed",opacity:proyectoActual?1:0.55,display:"flex",alignItems:"center",gap:10,minHeight:88,gridColumn:action==="cierre"?"1 / -1":undefined,boxShadow:action==="fichaje"&&!isDark?"0 12px 22px rgba(27,95,134,0.18)":"none"}}>
+      {[["▣","Fichar jornada",C.green,"fichaje"],["◉","Subir foto",C.orange||C.blue,"foto"],["□","Pedir material",C.purple,"material"],["!","Reportar incidencia",C.amber,"incidencia"],["✓","Cierre técnico",C.green,"cierre"]].map(([ic,l,c,action])=><button key={l} onClick={()=>quickProjectAction(action)} disabled={!proyectoActual} style={{background:action==="fichaje"?`linear-gradient(135deg, ${C.orangeD||C.orange||C.blue}, ${C.orange||C.blue})`:(isDark?"#142033":"#fff"),border:"1px solid "+(action==="fichaje"?(C.orange||C.blue):C.border),borderRadius:14,padding:"14px 12px",textAlign:"left",cursor:proyectoActual?"pointer":"not-allowed",opacity:proyectoActual?1:0.55,display:"flex",alignItems:"center",gap:10,minHeight:88,gridColumn:action==="cierre"?"1 / -1":undefined,boxShadow:action==="fichaje"&&!isDark?"0 12px 22px "+(C.orange||C.blue)+"30":"none"}}>
         <div style={{width:34,height:34,borderRadius:12,background:c+"18",fontSize:20,color:c,fontWeight:900,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{ic}</div>
         <div style={{fontSize:15,color:action==="fichaje"?"#fff":C.text,fontWeight:900,fontFamily:"'Inter',sans-serif",lineHeight:1.15}}>{l}</div>
       </button>)}
     </div>
-    {proyectoActual&&primeraTarea&&<button onClick={()=>onGoProyecto(proyectoActual)} style={{width:"100%",background:isDark?"#0F1B2B":"#EAF3FB",border:"1px solid "+C.blue+"33",borderRadius:12,padding:"12px 14px",textAlign:"left",marginBottom:18,cursor:"pointer"}}>
-      <div style={{fontSize:11,color:C.blue,fontWeight:900,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:4}}>Siguiente acción sugerida</div>
+    {proyectoActual&&primeraTarea&&<button onClick={()=>onGoProyecto(proyectoActual)} style={{width:"100%",background:isDark?"#0F1B2B":"#FFF7ED",border:"1px solid "+(C.orange||C.blue)+"33",borderRadius:12,padding:"12px 14px",textAlign:"left",marginBottom:18,cursor:"pointer"}}>
+      <div style={{fontSize:11,color:C.orange||C.blue,fontWeight:900,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'Inter',sans-serif",marginBottom:4}}>Siguiente acción sugerida</div>
       <div style={{fontSize:13,color:C.text,fontWeight:800,fontFamily:"'Inter',sans-serif"}}>{primeraTarea.estado==="En curso"?"Continuar":"Iniciar"}: {primeraTarea.nombre}</div>
     </button>}
 
@@ -1205,10 +1374,10 @@ function MobileHome({C,session,sessionIds=[],rol,proyAsignados,fichajeActivo,fic
               <div style={{fontSize:14,fontWeight:800,color:C.text,fontFamily:"'Inter',sans-serif"}}>{p.nombre}</div>
               <div style={{fontSize:12,color:C.muted,fontFamily:"'Inter',sans-serif",marginTop:3}}>{p.codigo||p.numero||"Sin código"}</div>
             </div>
-            <div style={{fontSize:14,fontWeight:800,color:pct===100?C.green:C.blue}}>{pct}%</div>
+            <div style={{fontSize:14,fontWeight:800,color:pct===100?C.green:(C.orange||C.blue)}}>{pct}%</div>
           </div>
           <div style={{height:6,background:isDark?"#0B1220":"#E8EEF5",borderRadius:10,overflow:"hidden",marginBottom:7}}>
-            <div style={{height:"100%",width:`${pct}%`,background:pct===100?C.green:C.blue,borderRadius:10}}/>
+            <div style={{height:"100%",width:`${pct}%`,background:pct===100?C.green:(C.orange||C.blue),borderRadius:10}}/>
           </div>
           <div style={{fontSize:12,color:C.muted,fontFamily:"'Inter',sans-serif"}}>{comp}/{total} tareas completadas</div>
         </button>;
@@ -1265,6 +1434,7 @@ function MobileProyecto({C,proyecto,session,personal,fichajes,incidencias,materi
   const [solItems,setSolItems]=useState([{materialId:"",cantidad:1,descripcion:""}]);
   const [solNota,setSolNota]=useState("");
   const [fotoComentario,setFotoComentario]=useState("");
+  const [mobileTab,setMobileTab]=useState("resumen");
 
   useEffect(()=>{
     if(!initialAction)return;
@@ -1291,15 +1461,17 @@ function MobileProyecto({C,proyecto,session,personal,fichajes,incidencias,materi
 
   const subirFoto=async(e)=>{
     const file=e.target.files?.[0];if(!file)return;
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const foto={id:newId(),proyectoId:proyecto.id,tecnicoId:primaryTechId,usuarioId:session.userId,tecnicoNombre:session.nombre,archivoBase64:ev.target.result,comentario:fotoComentario,fecha:new Date().toISOString(),miniatura:ev.target.result};
+    try {
+      const foto=await buildEvidenceRecord({file,proyecto,session,primaryTechId,comentario:fotoComentario,documentType:"foto_avance"});
       onSaveProyectoFoto(proyecto.id,foto);
       const tl=[...(proyecto.timeline||[]),{fecha:new Date().toISOString(),tipo:"foto",desc:`Foto subida por ${session.nombre}${fotoComentario?": "+fotoComentario:""}`,usuario:session.nombre}];
       onSaveProyecto({...proyecto,timeline:tl});
       setFotoComentario("");setFotoModal(false);
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      alert("No se pudo guardar la foto: "+(error.message||"error desconocido"));
+    } finally {
+      e.target.value="";
+    }
   };
 
   const enviarSolicitud=()=>{
@@ -1353,18 +1525,44 @@ function MobileProyecto({C,proyecto,session,personal,fichajes,incidencias,materi
         </button>)}
       </div>
 
+      <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:4,marginBottom:16}}>
+        {[
+          ["resumen","Resumen"],
+          ["tareas","Tareas"],
+          ["evidencias",`Evidencias ${fotos.length||""}`.trim()],
+          ["materiales",`Materiales ${solicitudesPend.length||""}`.trim()],
+          ["cierre","Cierre"],
+        ].map(([id,label])=><button key={id} onClick={()=>id==="cierre"&&todasCompletas?onGoCierre():setMobileTab(id)} style={{flex:"0 0 auto",border:"1px solid "+(mobileTab===id?(C.orange||C.blue):C.border),background:mobileTab===id?(C.orange||C.blue)+"16":(isDark?"#142033":"#fff"),color:mobileTab===id?(C.orange||C.blue):C.muted,borderRadius:999,padding:"9px 12px",fontSize:12,fontWeight:900,fontFamily:"'Inter',sans-serif",cursor:"pointer",whiteSpace:"nowrap"}}>{label}</button>)}
+      </div>
+
+      {mobileTab==="resumen"&&<div style={{display:"grid",gap:10,marginBottom:16}}>
+        <div style={{background:isDark?"#142033":"#fff",border:"1px solid "+C.border,borderRadius:13,padding:"14px"}}>
+          <div style={{fontSize:11,color:C.orange||C.blue,fontWeight:900,textTransform:"uppercase",letterSpacing:"0.08em",fontFamily:"'Inter',sans-serif",marginBottom:8}}>Qué falta para avanzar</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+            <div><div style={{fontSize:20,fontWeight:950,color:C.text}}>{tareasMias.filter(t=>t.estado!=="Completada").length}</div><div style={{fontSize:11,color:C.muted}}>tareas</div></div>
+            <div><div style={{fontSize:20,fontWeight:950,color:solicitudesPend.length?C.purple:C.green}}>{solicitudesPend.length}</div><div style={{fontSize:11,color:C.muted}}>materiales</div></div>
+            <div><div style={{fontSize:20,fontWeight:950,color:incidencias.filter(i=>i.estado==="Abierta"||i.estado==="En proceso").length?C.red:C.green}}>{incidencias.filter(i=>i.estado==="Abierta"||i.estado==="En proceso").length}</div><div style={{fontSize:11,color:C.muted}}>incidencias</div></div>
+          </div>
+        </div>
+        {instalacion&&<div style={{background:isDark?"#142033":"#fff",border:"1px solid "+C.border,borderRadius:13,padding:"14px"}}>
+          <div style={{fontSize:11,color:C.muted,fontWeight:900,textTransform:"uppercase",letterSpacing:"0.08em",fontFamily:"'Inter',sans-serif",marginBottom:6}}>Instalación</div>
+          <div style={{fontSize:14,color:C.text,fontWeight:900,fontFamily:"'Inter',sans-serif"}}>{instalacion.nombre||"Instalación"}</div>
+          <div style={{fontSize:12,color:C.muted,fontFamily:"'Inter',sans-serif",lineHeight:1.4,marginTop:3}}>{instalacion.direccion||"Sin dirección cargada"}</div>
+        </div>}
+      </div>}
+
       {/* Fotos recientes */}
-      {fotos.length>0&&<div style={{marginBottom:16}}>
+      {mobileTab==="evidencias"&&fotos.length>0&&<div style={{marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Fotos ({fotos.length})</div>
         <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4}}>
           {fotos.slice(-5).map((f,i)=><div key={f.id||i} style={{flexShrink:0,width:72,height:72,borderRadius:8,overflow:"hidden",border:`1px solid ${isDark?"#334155":"#E2E8F0"}`}}>
-            <img src={f.archivoBase64||f.miniatura} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+            <EvidenceThumb C={C} foto={f} height={72} compact/>
           </div>)}
         </div>
       </div>}
 
       {/* Mis tareas */}
-      <div style={{fontSize:11,fontWeight:700,color:C.muted,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Mis tareas</div>
+      {mobileTab==="tareas"&&<><div style={{fontSize:11,fontWeight:700,color:C.muted,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Mis tareas</div>
       {tareasMias.length===0
         ?<div style={{textAlign:"center",padding:"30px 20px",background:isDark?"#1E293B":"#F8FAFC",borderRadius:12,border:`1px dashed ${isDark?"#334155":"#CBD5E1"}`}}>
           <div style={{fontSize:14,color:C.muted,fontFamily:"'Inter',sans-serif"}}>Sin tareas asignadas en este proyecto</div>
@@ -1388,19 +1586,19 @@ function MobileProyecto({C,proyecto,session,personal,fichajes,incidencias,materi
             </button>;
           })}
         </div>
-      }
+      }</>}
 
       {/* Botón cierre */}
-      {todasCompletas&&<div style={{marginTop:20,padding:"14px 16px",background:"#052e1622",border:"1px solid #22C55E44",borderRadius:12}}>
+      {mobileTab==="cierre"&&<div style={{marginTop:6,padding:"14px 16px",background:todasCompletas?"#052e1622":(isDark?"#142033":"#fff"),border:"1px solid "+(todasCompletas?"#22C55E44":C.border),borderRadius:12}}>
         <div style={{fontSize:12,fontWeight:700,color:"#22C55E",fontFamily:"'Inter',sans-serif",marginBottom:4}}>✓ Todas las tareas completadas</div>
-        <div style={{fontSize:11,color:C.muted,fontFamily:"'Inter',sans-serif",marginBottom:10}}>Puedes proceder al cierre técnico del proyecto con firma del cliente.</div>
-        <button onClick={onGoCierre} style={{width:"100%",background:"linear-gradient(135deg,#16a34a,#15803d)",border:"none",borderRadius:10,padding:"14px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Inter',sans-serif"}}>
+        <div style={{fontSize:11,color:C.muted,fontFamily:"'Inter',sans-serif",marginBottom:10}}>{todasCompletas?"Puedes proceder al cierre técnico del proyecto con firma del cliente.":"Completa todas las tareas antes de cerrar técnicamente."}</div>
+        <button onClick={onGoCierre} disabled={!todasCompletas} style={{width:"100%",background:todasCompletas?"linear-gradient(135deg,#16a34a,#15803d)":C.muted,border:"none",borderRadius:10,padding:"14px",color:"#fff",fontSize:14,fontWeight:700,cursor:todasCompletas?"pointer":"not-allowed",fontFamily:"'Inter',sans-serif"}}>
           🔐 Iniciar cierre técnico
         </button>
       </div>}
 
       {/* Incidencias activas */}
-      {solicitudesPend.length>0&&<div style={{marginTop:16}}>
+      {mobileTab==="materiales"&&solicitudesPend.length>0&&<div style={{marginTop:16}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Solicitudes pendientes</div>
         {solicitudesPend.map(sol=><div key={sol.id} style={{background:isDark?"#1E293B":"#fff",border:"1px solid "+C.purple+"44",borderRadius:10,padding:"10px 14px",marginBottom:8}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
@@ -1412,7 +1610,7 @@ function MobileProyecto({C,proyecto,session,personal,fichajes,incidencias,materi
       </div>}
 
       {/* Incidencias activas */}
-      {incidencias.filter(i=>i.estado==="Abierta"||i.estado==="En proceso").length>0&&<div style={{marginTop:16}}>
+      {mobileTab==="resumen"&&incidencias.filter(i=>i.estado==="Abierta"||i.estado==="En proceso").length>0&&<div style={{marginTop:16}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,fontFamily:"'Inter',sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Incidencias activas</div>
         {incidencias.filter(i=>i.estado==="Abierta"||i.estado==="En proceso").map(inc=><div key={inc.id} style={{background:isDark?"#1E293B":"#fff",border:`1px solid ${COL_PRIO[inc.prioridad]||"#F59E0B"}44`,borderRadius:10,padding:"10px 14px",marginBottom:8}}>
           <div style={{fontSize:11,fontWeight:700,color:COL_PRIO[inc.prioridad]||"#F59E0B"}}>{inc.prioridad} · {inc.estado}</div>
@@ -1575,15 +1773,17 @@ function MobileTarea({C,tarea,proyecto,session,primaryTechId,personal,fichajes,f
 
   const subirFotoTarea=async(e)=>{
     const file=e.target.files?.[0];if(!file)return;
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const foto={id:newId(),proyectoId:proyecto.id,tareaId:tarea.id,tecnicoId:primaryTechId||session.userId,usuarioId:session.userId,tecnicoNombre:session.nombre,archivoBase64:ev.target.result,comentario:fotoComentario,fecha:new Date().toISOString()};
+    try {
+      const foto=await buildEvidenceRecord({file,proyecto,tarea,session,primaryTechId:primaryTechId||session.userId,comentario:fotoComentario,documentType:"foto_tarea"});
       onSaveProyectoFoto(proyecto.id,foto);
       const tl=[...(proyecto.timeline||[]),{fecha:new Date().toISOString(),tipo:"foto",desc:`Foto en tarea "${tarea.nombre}"${fotoComentario?": "+fotoComentario:""}`,usuario:session.nombre}];
       onSaveProyecto({...proyecto,timeline:tl});
       setFotoComentario("");setFotoModal(false);
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      alert("No se pudo guardar la foto: "+(error.message||"error desconocido"));
+    } finally {
+      e.target.value="";
+    }
   };
 
   const col=COL_TAREA[tarea.estado]||"#64748B";
@@ -1662,7 +1862,7 @@ function MobileTarea({C,tarea,proyecto,session,primaryTechId,personal,fichajes,f
       {/* Fotos de esta tarea */}
       {fotasTarea.length>0&&<div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         {fotasTarea.map((f,i)=><div key={i} style={{width:72,height:72,borderRadius:8,overflow:"hidden",border:`1px solid ${isDark?"#334155":"#E2E8F0"}`}}>
-          <img src={f.archivoBase64} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+          <EvidenceThumb C={C} foto={f} height={72} compact/>
         </div>)}
       </div>}
 
@@ -1733,10 +1933,45 @@ function MobileCierre({C,proyecto,session,fichajes,onSaveProyecto,onGoBack,isDar
 
   const rutValido=validarRut(form.rut);
 
-  const finalizarCierre=()=>{
+  const finalizarCierre=async()=>{
     const canvas=firmaRef.current?.querySelector("canvas");
-    const firmaBase64=canvas?canvas.toDataURL("image/png"):null;
-    const cierre={tecnicoId:session.tecnicoId||session.userId,usuarioId:session.userId,tecnicoNombre:session.nombre,fecha:new Date().toISOString(),receptorNombre:form.nombre,receptorRut:form.rut,receptorCargo:form.cargo,receptorEmail:form.email,firmaBase64,notasFinales:form.notas,tareasCompletadas:completadas,horasReales:+totalH.toFixed(2),geoValidado:false,checklist};
+    let firmaData={};
+    if(canvas){
+      const blob=await canvasToBlob(canvas,"image/png");
+      const file=blob?new File([blob],`firma-cierre-${safeFileName(proyecto.numero||proyecto.id)}.png`,{type:"image/png"}):null;
+      if(session?.companyId&&file){
+        try{
+          const attachment=await uploadAttachment("project",proyecto.id,file,{
+            documentType:"firma_cierre",
+            proyectoId:proyecto.id,
+            receptorNombre:form.nombre,
+            receptorRut:form.rut,
+            tecnicoId:session.tecnicoId||session.userId,
+          });
+          const signed=await getAttachmentSignedUrl(attachment).catch(()=>null);
+          await createActivityEvent("project",proyecto.id,"signature_uploaded",{
+            summary:`Firma de cierre registrada por ${session.nombre||"técnico"}`,
+            metadata:{attachmentId:attachment?.id, receptorRut:form.rut},
+          }).catch(()=>null);
+          firmaData={
+            firmaAttachmentId:attachment?.id||"",
+            firmaStorageBucket:attachment?.bucket||"",
+            firmaStoragePath:attachment?.storage_path||"",
+            firmaFileName:attachment?.file_name||file.name,
+            firmaMimeType:attachment?.mime_type||file.type,
+            firmaSignedUrl:signedUrlFromResponse(signed),
+            firmaOrigen:"storage",
+            firmaPendienteStorage:false,
+          };
+        }catch(error){
+          enqueueOfflineAction({type:"signature_upload_pending",entityType:"project",entityId:proyecto.id,documentType:"firma_cierre",metadata:{reason:error.message,receptorRut:form.rut}});
+          firmaData={firmaBase64:canvas.toDataURL("image/png"),firmaOrigen:"local_base64",firmaPendienteStorage:true};
+        }
+      }else{
+        firmaData={firmaBase64:canvas.toDataURL("image/png"),firmaOrigen:"local_base64",firmaPendienteStorage:true};
+      }
+    }
+    const cierre={tecnicoId:session.tecnicoId||session.userId,usuarioId:session.userId,tecnicoNombre:session.nombre,fecha:new Date().toISOString(),receptorNombre:form.nombre,receptorRut:form.rut,receptorCargo:form.cargo,receptorEmail:form.email,...firmaData,notasFinales:form.notas,tareasCompletadas:completadas,horasReales:+totalH.toFixed(2),geoValidado:false,checklist};
     const requiereRevision=proyecto.tieneRecurrente||proyecto.baseRecMes>0||proyecto.mrr>0||proyecto.requiereActivacionServicio;
     const timeline=[
       ...(proyecto.timeline||[]),

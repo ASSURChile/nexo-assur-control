@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <path d="M 212.699,281 L 82.795,356 L 256,456 L 256,306 Z" fill="#C85F1F" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="miter" />
+    <path d="M 256,306 L 256,456 L 429.205,356 L 299.301,281 Z" fill="#C85F1F" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="miter" />
+    <path d="M 299.301,281 L 429.205,356 L 429.205,156 L 299.301,231 Z" fill="#C85F1F" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="miter" />
+    <path d="M 299.301,231 L 429.205,156 L 256,56 L 256,206 Z" fill="#C85F1F" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="miter" />
+    <path d="M 256,206 L 256,56 L 82.795,156 L 212.699,231 Z" fill="#C85F1F" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="miter" />
+    <path d="M 212.699,231 L 82.795,156 L 82.795,356 L 212.699,281 Z" fill="#C85F1F" stroke="#FFFFFF" stroke-width="8" stroke-linejoin="miter" />
+    <path d="M 256,306 L 299.301,281 L 299.301,231 L 256,206 L 212.699,231 L 212.699,281 Z" fill="transparent" stroke="none" />
+    <line x1="256" y1="206" x2="256" y2="56" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
+  </g>
+</svg>

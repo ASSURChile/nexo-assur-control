@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ff, SERVICIOS_REC_DEF, TIPOS_PROYECTO_DEF } from "../config/appConstants";
 import { Bdg, Btn, Card, Fld, G, Inp, Lbl, STitle } from "../components/ui";
 import { repositories as repo } from "../services/repositories";
@@ -7,6 +7,7 @@ import { buildBackupPayload, restoreBackupPayload } from "../services/backupServ
 import { BACKEND_SYNC_DEFAULT_URL, checkBackendHealth, pullBackendSnapshot, pushLocalSnapshotToBackend } from "../services/backendSyncService";
 import { calcCostoKm } from "../domain/operations";
 import ConfigIntegracionesView from "./ConfigIntegracionesView";
+import { getSystemHealth } from "../services/healthService";
 
 const newId = () => dataService.id();
 
@@ -67,6 +68,7 @@ export default function ConfigView({ C, params, categorias, ejecutivos, onSavePa
     ["operativo", "Operaciones"],
     ["maestros", "Maestros"],
     ["integra", "Integraciones"],
+    ["salud", "Salud"],
     ["sistema", "Sistema"],
   ];
 
@@ -156,6 +158,7 @@ export default function ConfigView({ C, params, categorias, ejecutivos, onSavePa
       {tab === "operativo" && <ConfigOperativa C={C} form={form} sf={sf} setForm={setForm} readonly={readonly} />}
       {tab === "maestros" && <ConfigMaestros C={C} form={form} setForm={setForm} readonly={readonly} />}
       {tab === "integra" && <ConfigIntegracionesView C={C} readonly={readonly} />}
+      {tab === "salud" && <ConfigSalud C={C} />}
 
       {tab === "sistema" && <>
         <Card C={C}>
@@ -252,6 +255,59 @@ export default function ConfigView({ C, params, categorias, ejecutivos, onSavePa
       {!readonly && <div style={{ display: "flex", justifyContent: "flex-end" }}><Btn C={C} onClick={saveAll}>{saved ? "Guardado" : "Guardar configuración"}</Btn></div>}
     </div>
   );
+}
+
+function ConfigSalud({ C }) {
+  const [health, setHealth] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const refresh = async () => {
+    setLoading(true);
+    try {
+      setHealth(await getSystemHealth());
+    } catch (error) {
+      setHealth({ error: error.message || "No se pudo leer salud del sistema." });
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { refresh(); }, []);
+  const statusColor = health?.supabaseConfigured ? C.green : C.amber;
+  const renderList = (value, empty) => {
+    if (value?.error) return <div style={{ color: C.amber, fontSize: 12, fontFamily: ff }}>{value.error}</div>;
+    const rows = Array.isArray(value) ? value : [];
+    if (!rows.length) return <div style={{ color: C.textM, fontSize: 12, fontFamily: ff }}>{empty}</div>;
+    return <div style={{ display: "grid", gap: 8 }}>
+      {rows.map((row, idx) => <div key={row.id || row.created_at || idx} style={{ padding: "9px 11px", background: C.bg2, border: "1px solid " + C.border, borderRadius: 7 }}>
+        <div style={{ fontSize: 12, color: C.text, fontWeight: 850, fontFamily: ff }}>{row.message || `${row.source || "sync"} · ${row.entity || row.status || "registro"}`}</div>
+        <div style={{ fontSize: 10, color: C.textM, fontFamily: ff, marginTop: 3 }}>{row.created_at || row.createdAt || ""}</div>
+      </div>)}
+    </div>;
+  };
+  return <div>
+    <Card C={C}>
+      <STitle C={C} action={<Btn C={C} small variant="ghost" onClick={refresh} disabled={loading}>{loading ? "Revisando..." : "Actualizar"}</Btn>}>Salud del sistema</STitle>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12 }}>
+        <div style={{ padding: 14, background: C.bg2, border: "1px solid " + C.border, borderRadius: 8 }}>
+          <div style={{ fontSize: 10, color: C.textM, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: ff }}>Supabase</div>
+          <div style={{ color: statusColor, fontWeight: 900, fontSize: 18, marginTop: 6, fontFamily: ff }}>{health?.supabaseConfigured ? "Configurado" : "No configurado"}</div>
+          <div style={{ color: C.textM, fontSize: 12, marginTop: 5, fontFamily: ff }}>{health?.supabaseConfigured ? "La app tiene variables cloud disponibles." : "Modo local/demo o falta URL/key."}</div>
+        </div>
+        <div style={{ padding: 14, background: C.bg2, border: "1px solid " + C.border, borderRadius: 8 }}>
+          <div style={{ fontSize: 10, color: C.textM, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: ff }}>Estado</div>
+          <div style={{ color: health?.error ? C.red : C.green, fontWeight: 900, fontSize: 18, marginTop: 6, fontFamily: ff }}>{health?.error ? "Con error" : "Operativo"}</div>
+          <div style={{ color: C.textM, fontSize: 12, marginTop: 5, fontFamily: ff }}>{health?.error || "Sin bloqueos locales detectados."}</div>
+        </div>
+      </div>
+    </Card>
+    <Card C={C}>
+      <STitle C={C}>Errores recientes</STitle>
+      {renderList(health?.recentErrors, "Sin errores recientes registrados.")}
+    </Card>
+    <Card C={C}>
+      <STitle C={C}>Últimas sincronizaciones</STitle>
+      {renderList(health?.syncLogs, "Sin logs de sincronización recientes.")}
+    </Card>
+  </div>;
 }
 
 function ConfigMaestros({ C, form, setForm, readonly }) {

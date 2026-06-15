@@ -34,7 +34,7 @@ export default function ConfigIntegracionesView({C,readonly}){
       <STitle C={C}>Modo de operación</STitle>
       <div style={{padding:"10px 12px",background:C.blue+"11",border:"1px solid "+C.blue+"33",borderRadius:6,fontSize:12,color:C.textS,fontFamily:ff,lineHeight:1.5}}>
         <b style={{color:C.blue}}>📌 Principio rector:</b> Assur Control complementa Softland — no lo reemplaza.<br/>
-        Mientras la integración automática no esté disponible, puedes <b>operar 100% en modo manual</b> ingresando datos directamente, o usar este importador para subir archivos CSV/Excel exportados desde Softland.
+        Mientras la integración automática no esté disponible, puedes <b>operar 100% en modo manual</b> ingresando datos directamente, o usar este importador para subir archivos CSV/Excel exportados desde Softland. La integración automática queda preparada en dos rutas: <b>API Softland</b> o <b>base de datos/vistas SQL solo lectura</b>.
       </div>
     </Card>
 
@@ -140,7 +140,8 @@ export default function ConfigIntegracionesView({C,readonly}){
         {[
           {fase:"Fase 1 (actual)",titulo:"Carga manual CSV/Excel",estado:"activa",desc:"Exportar desde Softland, pegar en este importador. Funciona desde día 1."},
           {fase:"Fase 2",titulo:"Importación programada",estado:"futuro",desc:"Script automático lee archivos depositados en carpeta compartida 1-2 veces al día."},
-          {fase:"Fase 3",titulo:"API / DB directa",estado:"futuro",desc:"Lectura en tiempo real desde la base de datos de Softland (read-only)."},
+          {fase:"Fase 3A",titulo:"API Softland",estado:"futuro",desc:"Conexión server-side contra endpoints Softland, con credenciales fuera del navegador."},
+          {fase:"Fase 3B",titulo:"Base de datos / vistas SQL",estado:"futuro",desc:"Lectura read-only desde vistas autorizadas si Softland no dispone API o si Power BI usa SQL."},
           {fase:"Fase 4",titulo:"Sincronización bidireccional",estado:"evaluacion",desc:"Cliente nuevo en ASSUR se crea en Softland (requiere middleware)."},
         ].map((x,i)=>(
           <div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 12px",background:x.estado==="activa"?C.green+"11":C.bg2,borderRadius:6,border:"1px solid "+(x.estado==="activa"?C.green+"44":C.border)}}>

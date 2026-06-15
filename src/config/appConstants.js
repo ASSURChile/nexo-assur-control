@@ -1,5 +1,5 @@
-export const DARK  = { bg0:"#101827",bg1:"#182435",bg2:"#223045",bg3:"#2B3A50",header:"#0B1421",blue:"#83C9EE",blueD:"#23739D",text:"#EAF1F8",textS:"#C5D3E0",textM:"#93A4B8",border:"#2B3A4D",borderL:"#45576C",green:"#5BD38E",amber:"#E6B84E",red:"#F07972",purple:"#AE8CE8" };
-export const LIGHT = { bg0:"#F4F7FA",bg1:"#FFFFFF",bg2:"#F8FAFC",bg3:"#EEF3F7",header:"#101C2B",blue:"#1B5F86",blueD:"#144967",text:"#172436",textS:"#334155",textM:"#64748B",border:"#DBE5EE",borderL:"#C8D7E6",green:"#1F8A55",amber:"#B58112",red:"#C9473C",purple:"#6F56B4" };
+export const DARK  = { bg0:"#121D2B",bg1:"#1A2636",bg2:"#233247",bg3:"#2D3D52",header:"#101927",blue:"#83C9EE",blueD:"#23739D",orange:"#E17327",orangeD:"#C55A1B",text:"#EAF1F8",textS:"#C5D3E0",textM:"#93A4B8",border:"#2D3B4F",borderL:"#45576C",green:"#5BD38E",amber:"#E6B84E",red:"#F07972",purple:"#AE8CE8" };
+export const LIGHT = { bg0:"#F4F7FB",bg1:"#FFFFFF",bg2:"#F8FAFC",bg3:"#EEF3F7",header:"#101C2B",blue:"#1B5F86",blueD:"#144967",orange:"#E17327",orangeD:"#C55A1B",text:"#172436",textS:"#334155",textM:"#64748B",border:"#DBE5EE",borderL:"#C8D7E6",green:"#1F8A55",amber:"#B58112",red:"#C9473C",purple:"#6F56B4" };
 export const ff = "'Inter', system-ui, sans-serif";
 
 export const ESTADOS = ["Borrador","En revisión","Enviada","Aprobada","Rechazada","Vencida"];

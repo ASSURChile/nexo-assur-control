@@ -80,6 +80,20 @@ Nunca usar `SUPABASE_SERVICE_ROLE_KEY` en frontend.
 Softland debe quedar como proveedor financiero/contable, no como dueño de la
 operación ASSUR.
 
+ASSUR Control trabajara con una sola plataforma y un solo workspace de seguridad,
+pero cada registro financiero/operativo debe conservar su empresa legal de
+origen:
+
+- `alerta_md`: monitoreo y servicios recurrentes.
+- `servicios_electronicos`: implementacion tecnica, proyectos, materiales y horas.
+
+El detalle de esta separacion esta en `docs/multi-company-architecture.md`.
+La pauta para solicitar acceso API esta en `docs/softland-api-request.md`.
+Las dos opciones tecnicas soportadas estan descritas en
+`docs/softland-connection-options.md`.
+El contrato JSON minimo para la API intermedia esta en
+`docs/softland-api-contract.md`.
+
 Fases recomendadas:
 
 1. CSV manual controlado.

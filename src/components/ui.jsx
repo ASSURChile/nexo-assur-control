@@ -3,7 +3,7 @@ import { ff } from "../config/appConstants";
 
 export function Lbl({ C, ch, req }) {
   return (
-    <div style={{ fontSize: 11, fontWeight: 850, color: C.textM, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 7, fontFamily: ff, lineHeight: 1.25 }}>
+    <div style={{ fontSize: 11, fontWeight: 850, color: C.textM, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 7, fontFamily: ff, lineHeight: 1.25 }}>
       {ch}
       {req && <span style={{ color: C.red, marginLeft: 2 }}>*</span>}
     </div>
@@ -15,7 +15,8 @@ export function Inp({ C, value, onChange, type = "text", placeholder = "", disab
   const isNum = type === "number";
   const dv = isNum && (value === 0 || value === "0" || value === null || value === undefined) ? "" : value;
   const ph = isNum && !placeholder ? "0" : placeholder;
-  const base = { width: "100%", background: C.bg1, border: "1px solid " + (f ? C.blue : C.border), borderRadius: 8, color: C.text, padding: "11px 13px", fontSize: 14, fontFamily: ff, outline: "none", boxSizing: "border-box", boxShadow: f && C.isLight ? "0 0 0 3px rgba(27,95,134,0.1)" : "none", transition: "border-color 140ms ease, box-shadow 140ms ease", ...style };
+  const accent = C.orange || C.blue;
+  const base = { width: "100%", background: C.bg1, border: "1px solid " + (f ? accent : C.border), borderRadius: 11, color: C.text, padding: "12px 13px", fontSize: 14, fontFamily: ff, outline: "none", boxSizing: "border-box", boxShadow: f && C.isLight ? "0 0 0 3px " + accent + "1F" : "none", transition: "border-color 140ms ease, box-shadow 140ms ease", ...style };
   if (type === "password") return <input type="password" value={value || ""} onChange={(e) => onChange(e.target.value)} onFocus={() => setF(true)} onBlur={() => setF(false)} disabled={disabled} style={base} placeholder={placeholder} />;
   if (type === "email") return <input type="email" value={value || ""} onChange={(e) => onChange(e.target.value)} onFocus={() => setF(true)} onBlur={() => setF(false)} disabled={disabled} style={base} placeholder={placeholder} />;
   if (type === "date") return <input type="date" value={value || ""} onChange={(e) => onChange(e.target.value)} onFocus={() => setF(true)} onBlur={() => setF(false)} disabled={disabled} style={base} />;
@@ -24,8 +25,9 @@ export function Inp({ C, value, onChange, type = "text", placeholder = "", disab
 
 export function Sel({ C, value, onChange, opts, placeholder = "— seleccionar —", disabled }) {
   const [f, setF] = useState(false);
+  const accent = C.orange || C.blue;
   return (
-    <select value={value || ""} onChange={(e) => onChange(e.target.value)} disabled={disabled} onFocus={() => setF(true)} onBlur={() => setF(false)} style={{ width: "100%", background: C.bg1, border: "1px solid " + (f ? C.blue : C.border), borderRadius: 8, color: value ? C.text : C.textM, padding: "11px 13px", fontSize: 14, fontFamily: ff, outline: "none", appearance: "none", boxSizing: "border-box", boxShadow: f && C.isLight ? "0 0 0 3px rgba(27,95,134,0.1)" : "none", transition: "border-color 140ms ease, box-shadow 140ms ease" }}>
+    <select value={value || ""} onChange={(e) => onChange(e.target.value)} disabled={disabled} onFocus={() => setF(true)} onBlur={() => setF(false)} style={{ width: "100%", background: C.bg1, border: "1px solid " + (f ? accent : C.border), borderRadius: 11, color: value ? C.text : C.textM, padding: "12px 13px", fontSize: 14, fontFamily: ff, outline: "none", appearance: "none", boxSizing: "border-box", boxShadow: f && C.isLight ? "0 0 0 3px " + accent + "1F" : "none", transition: "border-color 140ms ease, box-shadow 140ms ease" }}>
       <option value="">{placeholder}</option>
       {opts.map((o) => {
         const v = typeof o === "object" ? o.value : o;
@@ -134,35 +136,39 @@ export function Fld({ C, label, req, children, suffix, prefix }) {
   );
 }
 
-export function Stat({ C, label, value, sub, color, small }) {
+export function Stat({ C, label, value, sub, color, small, density = "normal", compact = false, tone, style }) {
+  const accent = color || tone || C.text;
+  const textValue = String(value ?? "—");
+  const valueSize = small ? 20 : compact || textValue.length > 10 ? 24 : density === "comfortable" ? 27 : 29;
   return (
-    <div className="assur-stat" style={{ background: C.bg1, borderRadius: 8, padding: small ? "15px 16px" : "20px 22px", border: "1px solid " + C.border, boxShadow: C.isLight ? "0 14px 34px rgba(23,36,54,0.055)" : "none", minHeight: small ? undefined : 118 }}>
-      <div style={{ fontSize: 11, color: C.textM, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10, fontWeight: 900, fontFamily: ff, lineHeight: 1.25 }}>{label}</div>
-      <div style={{ fontSize: small ? 20 : 32, fontWeight: 900, color: color || C.text, fontFamily: ff, lineHeight: 1.05, letterSpacing: 0 }}>{value}</div>
+    <div className="assur-stat" style={{ minWidth: 0, overflow: "hidden", background: C.bg1, borderRadius: 14, padding: small ? "15px 16px" : density === "compact" ? "16px 17px" : "19px 20px", border: "1px solid " + C.border, boxShadow: C.isLight ? "0 14px 34px rgba(23,36,54,0.055)" : "inset 0 1px 0 rgba(255,255,255,0.04)", minHeight: small ? undefined : 112, ...style }}>
+      <div style={{ fontSize: 10.5, color: C.textM, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10, fontWeight: 900, fontFamily: ff, lineHeight: 1.25 }}>{label}</div>
+      <div style={{ fontSize: valueSize, fontWeight: 900, color: accent, fontFamily: ff, lineHeight: 1.05, letterSpacing: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
       {sub && <div style={{ fontSize: 14, color: C.textM, marginTop: 8, fontFamily: ff, lineHeight: 1.35, fontWeight: 650 }}>{sub}</div>}
     </div>
   );
 }
 
-export function Bdg({ color = "#64748B", children, small }) {
-  return <span style={{ background: color + "16", color, border: "1px solid " + color + "3D", borderRadius: 7, padding: small ? "3px 8px" : "5px 10px", fontSize: small ? 10 : 12, fontWeight: 800, display: "inline-flex", alignItems: "center", fontFamily: ff, whiteSpace: "nowrap", lineHeight: 1.2 }}>{children}</span>;
+export function Bdg({ color = "#64748B", children, small, style }) {
+  return <span style={{ background: color + "16", color, border: "1px solid " + color + "3D", borderRadius: 999, padding: small ? "4px 9px" : "6px 11px", fontSize: small ? 10 : 12, fontWeight: 850, display: "inline-flex", alignItems: "center", fontFamily: ff, whiteSpace: "nowrap", lineHeight: 1.2, ...style }}>{children}</span>;
 }
 
 export function Btn({ C, onClick, children, variant = "solid", color, small, disabled, full }) {
-  const bg = variant === "ghost" ? "transparent" : variant === "soft" ? (color || C.blue) + "22" : color || C.blue;
-  const brd = variant === "ghost" ? "1px solid " + (color || C.borderL) : "1px solid " + (variant === "soft" ? (color || C.blue) + "44" : "transparent");
-  const col = variant === "ghost" ? color || C.textM : variant === "soft" ? color || C.blue : "#fff";
-  return <button onClick={onClick} disabled={disabled} style={{ background: bg, color: col, border: brd, borderRadius: 8, padding: small ? "8px 12px" : "11px 16px", cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 11 : 12, fontWeight: 900, letterSpacing: "0.06em", fontFamily: ff, textTransform: "uppercase", opacity: disabled ? 0.45 : 1, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 7, width: full ? "100%" : undefined, justifyContent: full ? "center" : undefined, boxShadow: variant === "solid" && C.isLight ? "0 8px 18px rgba(27,95,134,0.14)" : "none", lineHeight: 1.15 }}>{children}</button>;
+  const accent = color || C.orange || C.blue;
+  const bg = variant === "ghost" ? "transparent" : variant === "soft" ? accent + "18" : `linear-gradient(135deg, ${accent}, ${C.orangeD || accent})`;
+  const brd = variant === "ghost" ? "1px solid " + (color || C.borderL) : "1px solid " + (variant === "soft" ? accent + "44" : "transparent");
+  const col = variant === "ghost" ? color || C.textM : variant === "soft" ? accent : "#fff";
+  return <button type="button" onClick={onClick} disabled={disabled} style={{ background: bg, color: col, border: brd, borderRadius: 11, padding: small ? "8px 12px" : "11px 16px", cursor: disabled ? "not-allowed" : "pointer", fontSize: small ? 11 : 12, fontWeight: 900, letterSpacing: "0.04em", fontFamily: ff, textTransform: "uppercase", opacity: disabled ? 0.45 : 1, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 7, width: full ? "100%" : undefined, justifyContent: full ? "center" : undefined, boxShadow: variant === "solid" && C.isLight ? "0 10px 20px " + accent + "24" : "none", lineHeight: 1.15 }}>{children}</button>;
 }
 
 export function Card({ C, children, style, pad, onClick }) {
-  return <div className="assur-card" onClick={onClick} style={{ background: C.bg1, border: "1px solid " + C.border, borderRadius: 8, padding: pad ?? 22, marginBottom: 16, boxShadow: C.isLight ? "0 16px 40px rgba(23,36,54,0.055)" : "none", ...style }}>{children}</div>;
+  return <div className="assur-card" onClick={onClick} style={{ minWidth: 0, overflow: "hidden", background: C.bg1, border: "1px solid " + C.border, borderRadius: 14, padding: pad ?? 22, marginBottom: 16, boxShadow: C.isLight ? "0 16px 40px rgba(23,36,54,0.055)" : "inset 0 1px 0 rgba(255,255,255,0.04)", ...style }}>{children}</div>;
 }
 
 export function STitle({ C, children, action }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 15, paddingBottom: 10, borderBottom: "1px solid " + C.border }}>
-      <div style={{ fontSize: 12, fontWeight: 900, color: C.blue, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: ff }}>{children}</div>
+      <div style={{ fontSize: 12, fontWeight: 900, color: C.orange || C.blue, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: ff }}>{children}</div>
       {action}
     </div>
   );
@@ -202,7 +208,7 @@ export function ModuleHero({ C, eyebrow, title, subtitle, actions, children }) {
     <Card C={C} style={{ marginBottom: 16, padding: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 16, alignItems: "start" }}>
         <div style={{ minWidth: 0 }}>
-          {eyebrow && <div style={{ fontSize: 11, color: C.blue, textTransform: "uppercase", letterSpacing: "0.14em", fontWeight: 900, fontFamily: ff, marginBottom: 7 }}>{eyebrow}</div>}
+          {eyebrow && <div style={{ fontSize: 11, color: C.orange || C.blue, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 900, fontFamily: ff, marginBottom: 7 }}>{eyebrow}</div>}
           <div style={{ fontSize: 22, color: C.text, fontWeight: 900, fontFamily: ff, lineHeight: 1.12 }}>{title}</div>
           {subtitle && <div style={{ fontSize: 13, color: C.textM, fontFamily: ff, marginTop: 6, lineHeight: 1.45, maxWidth: 780 }}>{subtitle}</div>}
         </div>
@@ -219,8 +225,8 @@ export function QuickActions({ C, items = [] }) {
   return (
     <div className="assur-quick-actions" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(visible.length, 4)}, minmax(0,1fr))`, gap: 10 }}>
       {visible.map((item) => (
-        <button key={item.label} type="button" onClick={item.onClick} disabled={item.disabled} style={{ background: item.tone ? item.tone + "12" : C.bg2, border: "1px solid " + (item.tone ? item.tone + "3D" : C.border), borderRadius: 9, padding: "12px 13px", textAlign: "left", cursor: item.disabled ? "not-allowed" : "pointer", opacity: item.disabled ? 0.55 : 1, minHeight: 76 }}>
-          <div style={{ fontSize: 12, fontWeight: 900, color: item.tone || C.text, fontFamily: ff, lineHeight: 1.25 }}>{item.label}</div>
+        <button key={item.label} type="button" onClick={item.onClick} disabled={item.disabled} style={{ minWidth: 0, background: item.tone ? item.tone + "12" : C.bg2, border: "1px solid " + (item.tone ? item.tone + "3D" : C.border), borderRadius: 11, padding: "12px 13px", textAlign: "left", cursor: item.disabled ? "not-allowed" : "pointer", opacity: item.disabled ? 0.55 : 1, minHeight: 76 }}>
+          <div style={{ fontSize: 12, fontWeight: 900, color: item.tone || C.text, fontFamily: ff, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis" }}>{item.label}</div>
           {item.description && <div style={{ fontSize: 11, color: C.textM, fontFamily: ff, lineHeight: 1.35, marginTop: 5 }}>{item.description}</div>}
         </button>
       ))}
@@ -234,7 +240,7 @@ export function WorkflowSteps({ C, steps = [], active = 0 }) {
       {steps.map((step, index) => {
         const done = index < active;
         const current = index === active;
-        const color = done ? C.green : current ? C.blue : C.textM;
+        const color = done ? C.green : current ? (C.orange || C.blue) : C.textM;
         return (
           <div key={step} style={{ background: done || current ? color + "10" : C.bg2, border: "1px solid " + (done || current ? color + "40" : C.border), borderRadius: 8, padding: "10px 11px", minWidth: 0 }}>
             <div style={{ width: 22, height: 22, borderRadius: 22, background: color + "18", color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, fontFamily: ff, marginBottom: 7 }}>{done ? "✓" : index + 1}</div>
@@ -252,7 +258,7 @@ export function SectionTabs({ C, value, onChange, items = [] }) {
       {items.map((item) => {
         const selected = value === item.value;
         return (
-          <button key={item.value} type="button" onClick={() => onChange(item.value)} style={{ border: "1px solid " + (selected ? C.blue + "66" : C.border), background: selected ? C.blue + "14" : C.bg1, color: selected ? C.blue : C.textM, borderRadius: 8, padding: "9px 12px", fontSize: 12, fontWeight: selected ? 900 : 750, fontFamily: ff, cursor: "pointer", whiteSpace: "nowrap", lineHeight: 1 }}>
+          <button key={item.value} type="button" onClick={() => onChange(item.value)} style={{ border: "1px solid " + (selected ? (C.orange || C.blue) + "66" : C.border), background: selected ? (C.orange || C.blue) + "14" : C.bg1, color: selected ? (C.orangeD || C.orange || C.blue) : C.textM, borderRadius: 999, padding: "9px 13px", fontSize: 12, fontWeight: selected ? 900 : 750, fontFamily: ff, cursor: "pointer", whiteSpace: "nowrap", lineHeight: 1 }}>
             {item.label}
           </button>
         );

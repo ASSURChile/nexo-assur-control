@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NEXO por ASSUR - Dashboard premium</title>
+    <style>
+      :root {
+        --orange-700: #c55a1b;
+        --orange-600: #e17327;
+        --orange-500: #fb8b33;
+        --orange-100: #fff0e4;
+        --ink-950: #0f1724;
+        --ink-900: #172235;
+        --ink-700: #344258;
+        --ink-500: #65748b;
+        --line: #dfe7f0;
+        --panel: #ffffff;
+        --green: #24a366;
+        --red: #d34d42;
+        --blue: #4c8ed9;
+        --amber: #c8871f;
+        --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: #eef2f7;
+        color: var(--ink-900);
+        font-family: var(--font);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .preview-nav {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 68px;
+        padding: 0 28px;
+        background: rgba(255,255,255,.9);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(16px);
+      }
+      .preview-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .preview-brand img {
+        width: 36px;
+        height: 36px;
+      }
+      .wordmark {
+        display: block;
+        color: var(--orange-700);
+        font-size: 23px;
+        font-weight: 950;
+        letter-spacing: .2em;
+        line-height: .9;
+        transform: scaleX(1.06);
+        transform-origin: left center;
+      }
+      .byline {
+        display: block;
+        margin-top: 5px;
+        color: var(--ink-500);
+        font-size: 7.5px;
+        font-weight: 650;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+      }
+      .preview-links {
+        display: flex;
+        gap: 8px;
+      }
+      .preview-links a {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 12px;
+        color: var(--ink-700);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+      .preview-links a:hover {
+        background: var(--orange-100);
+        border-color: #f0bd92;
+        color: var(--orange-700);
+      }
+
+      .intro {
+        max-width: 1380px;
+        margin: 0 auto;
+        padding: 32px 28px 12px;
+      }
+      .intro h1 {
+        max-width: 900px;
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.08;
+      }
+      .intro p {
+        max-width: 850px;
+        margin: 10px 0 0;
+        color: var(--ink-500);
+        font-size: 14px;
+      }
+
+      .mock-section {
+        max-width: 1480px;
+        margin: 0 auto 54px;
+        padding: 22px 28px 0;
+      }
+      .section-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 14px;
+      }
+      .section-head h2 {
+        margin: 0;
+        font-size: 22px;
+      }
+      .section-head p {
+        max-width: 720px;
+        margin: 0;
+        color: var(--ink-500);
+      }
+
+      .dashboard-frame {
+        overflow: auto;
+        border-radius: 24px;
+        border: 1px solid rgba(15,23,36,.1);
+        box-shadow: 0 28px 70px rgba(15, 23, 36, .16);
+      }
+      .dashboard {
+        display: grid;
+        grid-template-columns: 250px minmax(0,1fr);
+        min-width: 1180px;
+        min-height: 920px;
+      }
+
+      .sidebar {
+        padding: 22px 16px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 10px 22px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid currentColor;
+      }
+      .brand img {
+        width: 38px;
+        height: 38px;
+      }
+      .brand .wordmark {
+        color: currentColor;
+        font-size: 24px;
+      }
+      .brand .byline {
+        color: currentColor;
+        opacity: .62;
+      }
+      .nav-section {
+        margin: 18px 0;
+      }
+      .nav-title {
+        margin: 0 0 8px;
+        padding: 0 10px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+        opacity: .58;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        padding: 11px 12px;
+        background: transparent;
+        color: inherit;
+        font-size: 13px;
+        font-weight: 800;
+        text-align: left;
+      }
+      .nav-item i {
+        display: grid;
+        place-items: center;
+        width: 27px;
+        height: 27px;
+        border-radius: 9px;
+        font-style: normal;
+        font-size: 13px;
+      }
+      .nav-item span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .main {
+        min-width: 0;
+      }
+      .topbar {
+        display: grid;
+        grid-template-columns: minmax(280px,1fr) auto auto auto auto;
+        align-items: center;
+        gap: 12px;
+        min-height: 78px;
+        padding: 16px 24px;
+      }
+      .search {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        border-radius: 14px;
+        padding: 0 16px;
+        font-size: 13px;
+        font-weight: 650;
+      }
+      .chip {
+        min-width: 94px;
+        border-radius: 13px;
+        padding: 9px 12px;
+        text-align: center;
+      }
+      .chip span {
+        display: block;
+        font-size: 9px;
+        font-weight: 950;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+      .chip strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 14px;
+        line-height: 1;
+      }
+      .notify,
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        font-weight: 900;
+      }
+      .user {
+        min-width: 142px;
+        text-align: right;
+      }
+      .user strong,
+      .user span {
+        display: block;
+      }
+      .user strong {
+        font-size: 15px;
+        line-height: 1.05;
+      }
+      .user span {
+        margin-top: 3px;
+        font-size: 11px;
+        font-weight: 850;
+      }
+      .action {
+        border: 0;
+        border-radius: 14px;
+        padding: 13px 15px;
+        background: linear-gradient(135deg, var(--orange-700), var(--orange-500));
+        color: #fff;
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        box-shadow: 0 16px 28px rgba(197, 90, 27, .28);
+      }
+
+      .content {
+        padding: 28px 30px 34px;
+      }
+      .page-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 22px;
+      }
+      .eyebrow {
+        margin-bottom: 7px;
+        color: var(--orange-600);
+        font-size: 11px;
+        font-weight: 950;
+        letter-spacing: .17em;
+        text-transform: uppercase;
+      }
+      .page-head h3 {
+        margin: 0;
+        font-size: 31px;
+        line-height: 1.08;
+        letter-spacing: -.015em;
+      }
+      .page-head p {
+        max-width: 740px;
+        margin: 8px 0 0;
+        font-size: 14px;
+      }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0,1fr));
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+      .kpi,
+      .panel,
+      .activity-bar {
+        position: relative;
+        overflow: hidden;
+        border-radius: 18px;
+      }
+      .kpi {
+        min-height: 158px;
+        padding: 18px;
+      }
+      .kpi label {
+        display: block;
+        min-height: 32px;
+        font-size: 10.5px;
+        font-weight: 950;
+        letter-spacing: .12em;
+        line-height: 1.35;
+        text-transform: uppercase;
+      }
+      .kpi strong {
+        display: block;
+        margin-top: 14px;
+        font-size: 31px;
+        line-height: 1;
+        letter-spacing: -.02em;
+      }
+      .kpi small {
+        display: block;
+        margin-top: 10px;
+        font-size: 12.5px;
+      }
+      .trend {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 16px;
+        height: 28px;
+        opacity: .9;
+      }
+      .trend svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .panel-grid.dark-panels {
+        display: grid;
+        grid-template-columns: 1.1fr .9fr;
+        gap: 16px;
+      }
+      .panel-grid.light-panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .panel {
+        padding: 20px;
+      }
+      .panel-title {
+        color: var(--orange-600);
+        font-size: 10.5px;
+        font-weight: 950;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+      }
+      .panel h4 {
+        margin: 7px 0 16px;
+        font-size: 20px;
+        line-height: 1.15;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 14px;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid currentColor;
+      }
+      .row:last-of-type {
+        border-bottom: 0;
+      }
+      .row strong {
+        display: block;
+        font-size: 13.5px;
+      }
+      .row span {
+        display: block;
+        margin-top: 2px;
+        font-size: 12px;
+        opacity: .68;
+      }
+      .badge {
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 10.5px;
+        font-weight: 950;
+        letter-spacing: .07em;
+        white-space: nowrap;
+        text-transform: uppercase;
+      }
+      .badge.orange { background: rgba(251,139,51,.14); color: var(--orange-600); }
+      .badge.green { background: rgba(36,163,102,.14); color: var(--green); }
+      .badge.red { background: rgba(211,77,66,.14); color: var(--red); }
+      .badge.blue { background: rgba(76,142,217,.14); color: var(--blue); }
+      .badge.amber { background: rgba(200,135,31,.14); color: var(--amber); }
+      .panel-link,
+      .activity-bar a {
+        display: inline-flex;
+        margin-top: 16px;
+        color: var(--orange-600);
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: .06em;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+
+      .pipeline-step {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .pipeline-step strong {
+        font-size: 13px;
+      }
+      .pipeline-step span {
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .bar {
+        grid-column: 1 / -1;
+        height: 7px;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--orange-700), var(--orange-500));
+      }
+      .pipeline-total {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid currentColor;
+        font-weight: 950;
+      }
+
+      .activity-bar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: center;
+        padding: 17px 20px;
+      }
+      .activity-bar span {
+        display: block;
+        color: var(--orange-600);
+        font-size: 10px;
+        font-weight: 950;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+      .activity-bar strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+      }
+
+      /* Dark version */
+      .dark-frame {
+        background: #182231;
+      }
+      .dark {
+        background:
+          radial-gradient(circle at 82% 4%, rgba(251,139,51,.12), transparent 28%),
+          linear-gradient(135deg, #182231 0%, #101a27 48%, #162130 100%);
+        color: #dbe6f3;
+      }
+      .dark .sidebar {
+        background: rgba(9, 16, 25, .52);
+        border-right: 1px solid rgba(173, 194, 220, .12);
+        color: #edf5ff;
+      }
+      .dark .brand {
+        border-bottom-color: rgba(219,230,243,.14);
+      }
+      .dark .nav-item {
+        color: rgba(237,245,255,.72);
+      }
+      .dark .nav-item i {
+        background: rgba(255,255,255,.06);
+        color: rgba(237,245,255,.82);
+      }
+      .dark .nav-item.active {
+        background: rgba(251,139,51,.14);
+        color: #fff;
+        box-shadow: inset 3px 0 0 var(--orange-500);
+      }
+      .dark .nav-item.active i {
+        background: var(--orange-600);
+        color: white;
+      }
+      .dark .topbar {
+        background: rgba(11, 19, 30, .42);
+        border-bottom: 1px solid rgba(173, 194, 220, .1);
+      }
+      .dark .search,
+      .dark .chip,
+      .dark .notify,
+      .dark .avatar {
+        background: rgba(255,255,255,.055);
+        border: 1px solid rgba(210,226,245,.14);
+        color: rgba(237,245,255,.84);
+      }
+      .dark .chip span,
+      .dark .user span,
+      .dark .page-head p,
+      .dark .kpi small {
+        color: rgba(219,230,243,.62);
+      }
+      .dark .kpi,
+      .dark .panel {
+        background:
+          linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.045));
+        border: 1px solid rgba(210,226,245,.13);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 18px 40px rgba(0,0,0,.18);
+      }
+      .dark .kpi label {
+        color: rgba(219,230,243,.64);
+      }
+      .dark .row,
+      .dark .pipeline-total {
+        border-color: rgba(219,230,243,.1);
+      }
+
+      /* Light version */
+      .light-frame {
+        background: #f4f7fb;
+      }
+      .light {
+        background: #f4f7fb;
+        color: var(--ink-900);
+      }
+      .light .sidebar {
+        background: #ffffff;
+        border-right: 1px solid var(--line);
+        color: var(--ink-700);
+      }
+      .light .brand {
+        border-bottom-color: var(--line);
+      }
+      .light .brand .wordmark {
+        color: var(--orange-700);
+      }
+      .light .nav-item {
+        color: var(--ink-500);
+      }
+      .light .nav-item i {
+        background: #f2f5f8;
+        color: var(--ink-500);
+      }
+      .light .nav-item.active {
+        background: var(--orange-100);
+        color: var(--orange-700);
+      }
+      .light .nav-item.active i {
+        background: var(--orange-600);
+        color: #fff;
+      }
+      .light .topbar {
+        background: rgba(255,255,255,.88);
+        border-bottom: 1px solid var(--line);
+      }
+      .light .search,
+      .light .chip,
+      .light .notify,
+      .light .avatar {
+        background: #fff;
+        border: 1px solid var(--line);
+        color: var(--ink-700);
+        box-shadow: 0 10px 24px rgba(23,34,53,.04);
+      }
+      .light .chip span,
+      .light .user span,
+      .light .page-head p,
+      .light .kpi small {
+        color: var(--ink-500);
+      }
+      .light .kpi,
+      .light .panel,
+      .light .activity-bar {
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: 0 14px 30px rgba(23,34,53,.055);
+      }
+      .light .kpi label {
+        color: var(--ink-500);
+      }
+      .light .row,
+      .light .pipeline-total {
+        border-color: var(--line);
+      }
+      .compact-sidebar {
+        grid-template-columns: 210px minmax(0, 1fr);
+      }
+      .compact-sidebar .sidebar {
+        padding-left: 13px;
+        padding-right: 13px;
+      }
+      .compact-sidebar .nav-item {
+        padding: 10px;
+      }
+
+      @media (max-width: 1100px) {
+        .dashboard { grid-template-columns: 220px 1fr; }
+        .topbar { grid-template-columns: minmax(240px,1fr) auto auto auto; }
+        .action { grid-column: 4; }
+        .user { display: none; }
+        .kpi-grid,
+        .panel-grid.light-panels {
+          grid-template-columns: repeat(2, minmax(0,1fr));
+        }
+      }
+      @media (max-width: 760px) {
+        .preview-nav,
+        .intro,
+        .mock-section { padding-left: 16px; padding-right: 16px; }
+        .dashboard-frame { border-radius: 18px; }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="preview-nav">
+      <div class="preview-brand">
+        <img src="/brand/assur-hex-solid-orange.svg" alt="ASSUR" />
+        <div><strong class="wordmark">NEXO</strong><span class="byline">por ASSUR</span></div>
+      </div>
+      <div class="preview-links">
+        <a href="#oscuro">Oscuro</a>
+        <a href="#claro">Claro</a>
+      </div>
+    </nav>
+
+    <section class="intro">
+      <h1>Dashboard SaaS premium para NEXO por ASSUR</h1>
+      <p>Dos direcciones visuales listas para comparar: centro de operaciones oscuro, ejecutivo y tecnologico; y una version clara, compacta y orientada a productividad.</p>
+    </section>
+
+    <section class="mock-section" id="oscuro">
+      <div class="section-head">
+        <div>
+          <h2>Modo oscuro: centro de operaciones ejecutivo</h2>
+          <p>Azul carbon, tarjetas oscuras, bordes luminosos sutiles y naranjo como acento principal.</p>
+        </div>
+      </div>
+      <div class="dashboard-frame dark-frame">
+        <div class="dashboard dark">
+          <aside class="sidebar">
+            <div class="brand">
+              <img src="/brand/assur-hex-solid-whiteOnDark.svg" alt="ASSUR" />
+              <div><strong class="wordmark">NEXO</strong><span class="byline">por ASSUR</span></div>
+            </div>
+            <div class="nav-section">
+              <p class="nav-title">Centro</p>
+              <button class="nav-item active"><i>⌂</i><span>Panel diario</span></button>
+              <button class="nav-item"><i>!</i><span>Alertas</span></button>
+            </div>
+            <div class="nav-section">
+              <p class="nav-title">Operacion</p>
+              <button class="nav-item"><i>◎</i><span>Comercial</span></button>
+              <button class="nav-item"><i>▦</i><span>Cotizaciones</span></button>
+              <button class="nav-item"><i>◷</i><span>Proyectos</span></button>
+              <button class="nav-item"><i>◆</i><span>Monitoreo</span></button>
+            </div>
+            <div class="nav-section">
+              <p class="nav-title">Control</p>
+              <button class="nav-item"><i>$</i><span>Finanzas</span></button>
+              <button class="nav-item"><i>◌</i><span>Configuracion</span></button>
+            </div>
+          </aside>
+
+          <main class="main">
+            <header class="topbar">
+              <div class="search">Buscar cliente, proyecto, cotización o factura...</div>
+              <div class="chip"><span>UF</span><strong>$40.374</strong></div>
+              <div class="chip"><span>USD</span><strong>$907</strong></div>
+              <div class="user"><strong>Administrador</strong><span>Gerencia</span></div>
+              <button class="action">Nueva acción</button>
+            </header>
+
+            <section class="content">
+              <div class="page-head">
+                <div>
+                  <div class="eyebrow">Panel diario</div>
+                  <h3>Buenos días, Moisés</h3>
+                  <p>Estas son las decisiones que requieren foco hoy: cotizaciones, proyectos atrasados, cobranza y activaciones.</p>
+                </div>
+              </div>
+
+              <div class="kpi-grid">
+                <article class="kpi">
+                  <label>Ventas aprobadas</label>
+                  <strong>$18.5M</strong>
+                  <small>1 proyecto aprobado</small>
+                  <div class="trend"><svg viewBox="0 0 180 34"><path d="M2 26 C28 10, 48 30, 70 17 S118 11, 146 18 178 8" fill="none" stroke="#fb8b33" stroke-width="3" stroke-linecap="round"/></svg></div>
+                </article>
+                <article class="kpi">
+                  <label>MRR activo</label>
+                  <strong style="color:var(--green)">$1.45M</strong>
+                  <small>$17.4M anual</small>
+                  <div class="trend"><svg viewBox="0 0 180 34"><path d="M2 25 C25 22, 46 23, 66 16 S112 8, 136 13 178 7" fill="none" stroke="#24a366" stroke-width="3" stroke-linecap="round"/></svg></div>
+                </article>
+                <article class="kpi">
+                  <label>Cotizaciones por preparar</label>
+                  <strong style="color:var(--orange-500)">4</strong>
+                  <small>2 con prioridad alta</small>
+                  <div class="trend"><svg viewBox="0 0 180 34"><path d="M2 18 C30 19, 50 13, 76 15 S120 26, 144 18 178 21" fill="none" stroke="#fb8b33" stroke-width="3" stroke-linecap="round"/></svg></div>
+                </article>
+                <article class="kpi">
+                  <label>CxC vencida</label>
+                  <strong style="color:var(--red)">$3.8M</strong>
+                  <small>requiere gestión</small>
+                  <div class="trend"><svg viewBox="0 0 180 34"><path d="M2 12 C28 18, 46 8, 72 14 S118 26, 142 18 178 25" fill="none" stroke="#d34d42" stroke-width="3" stroke-linecap="round"/></svg></div>
+                </article>
+              </div>
+
+              <div class="panel-grid dark-panels">
+                <article class="panel">
+                  <div class="panel-title">Atención hoy</div>
+                  <h4>Acciones recomendadas</h4>
+                  <div class="row"><div><strong>Validar cotización Planta Molina</strong><span>Costeo listo para revisión gerencial.</span></div><b class="badge orange">Hoy</b></div>
+                  <div class="row"><div><strong>Seguir proyecto Andes Verde</strong><span>Falta confirmar agenda de terreno.</span></div><b class="badge blue">Mañana</b></div>
+                  <div class="row"><div><strong>Revisar cobranza vencida</strong><span>Cliente con saldo crítico en seguimiento.</span></div><b class="badge red">Urgente</b></div>
+                  <a class="panel-link" href="#">Ver todas las acciones</a>
+                </article>
+                <article class="panel">
+                  <div class="panel-title">Flujo operativo</div>
+                  <h4>Estados clave</h4>
+                  <div class="row"><strong>Solicitudes comerciales</strong><b class="badge amber">6 abiertas</b></div>
+                  <div class="row"><strong>Cotizaciones operaciones</strong><b class="badge orange">4 en curso</b></div>
+                  <div class="row"><strong>Proyectos en ejecución</strong><b class="badge green">8 activos</b></div>
+                  <div class="row"><strong>Entregas por validar</strong><b class="badge blue">3 pendientes</b></div>
+                  <div class="row"><strong>Cobranzas vencidas</strong><b class="badge red">5 críticas</b></div>
+                  <a class="panel-link" href="#">Ir al flujo operativo</a>
+                </article>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </section>
+
+    <section class="mock-section" id="claro">
+      <div class="section-head">
+        <div>
+          <h2>Modo claro: productividad compacta</h2>
+          <p>Fondo gris claro, tarjetas blancas, navegacion compacta, jerarquia limpia y foco en tareas operativas.</p>
+        </div>
+      </div>
+      <div class="dashboard-frame light-frame">
+        <div class="dashboard light compact-sidebar">
+          <aside class="sidebar">
+            <div class="brand">
+              <img src="/brand/assur-hex-solid-orange.svg" alt="ASSUR" />
+              <div><strong class="wordmark">NEXO</strong><span class="byline">por ASSUR</span></div>
+            </div>
+            <div class="nav-section">
+              <button class="nav-item active"><i>⌂</i><span>Inicio</span></button>
+              <button class="nav-item"><i>◎</i><span>Comercial</span></button>
+              <button class="nav-item"><i>▦</i><span>Cotizar</span></button>
+              <button class="nav-item"><i>◷</i><span>Proyectos</span></button>
+              <button class="nav-item"><i>$</i><span>Finanzas</span></button>
+              <button class="nav-item"><i>◌</i><span>Sistema</span></button>
+            </div>
+          </aside>
+
+          <main class="main">
+            <header class="topbar">
+              <div class="search">Buscar cliente, proyecto, cotización o factura...</div>
+              <div class="chip"><span>UF</span><strong>$40.374</strong></div>
+              <div class="chip"><span>USD</span><strong>$907</strong></div>
+              <div class="notify">◔</div>
+              <div class="avatar">MH</div>
+              <div class="user"><strong>Administrador</strong><span>Gerencia</span></div>
+              <button class="action">Nueva acción</button>
+            </header>
+
+            <section class="content">
+              <div class="page-head">
+                <div>
+                  <div class="eyebrow">Panel diario</div>
+                  <h3>Buenos días, Moisés 👋</h3>
+                  <p>Estas son las métricas y acciones clave para gestionar tu operación con foco.</p>
+                </div>
+              </div>
+
+              <div class="kpi-grid">
+                <article class="kpi">
+                  <label>Ventas aprobadas</label>
+                  <strong>$18.5M</strong>
+                  <small>1 proyecto aprobado</small>
+                  <div class="trend"><svg viewBox="0 0 180 34"><path d="M2 25 C25 18, 46 22, 68 15 S122 9, 178 12" fill="none" stroke="#fb8b33" stroke-width="3" stroke-linecap="round"/></svg></div>
+                </article>
+                <article class="kpi">
+                  <label>MRR activo</label>
+                  <strong style="color:var(--green)">$1.45M</strong>
+                  <small>$17.4M anual</small>
+                  <div class="trend"><svg viewBox="0 0 180 34"><path d="M2 26 C24 23, 48 22, 72 17 S126 11, 178 8" fill="none" stroke="#24a366" stroke-width="3" stroke-linecap="round"/></svg></div>
+                </article>
+                <article class="kpi">
+                  <label>Cotizaciones por preparar</label>
+                  <strong style="color:var(--orange-700)">4</strong>
+                  <small>2 con prioridad alta</small>
+                  <div class="trend"><svg viewBox="0 0 180 34"><path d="M2 19 C30 15, 52 20, 78 18 S132 22, 178 16" fill="none" stroke="#fb8b33" stroke-width="3" stroke-linecap="round"/></svg></div>
+                </article>
+                <article class="kpi">
+                  <label>CxC vencida</label>
+                  <strong style="color:var(--red)">$3.8M</strong>
+                  <small>requiere gestión</small>
+                  <div class="trend"><svg viewBox="0 0 180 34"><path d="M2 11 C24 16, 48 13, 72 18 S128 24, 178 26" fill="none" stroke="#d34d42" stroke-width="3" stroke-linecap="round"/></svg></div>
+                </article>
+              </div>
+
+              <div class="panel-grid light-panels">
+                <article class="panel">
+                  <div class="panel-title">Acciones recomendadas</div>
+                  <h4>Prioridad diaria</h4>
+                  <div class="row"><strong>Validar cotización Planta Molina</strong><b class="badge orange">Hoy</b></div>
+                  <div class="row"><strong>Revisar propuestas pendientes</strong><b class="badge blue">2 días</b></div>
+                  <div class="row"><strong>Seguimiento a CxC vencida</strong><b class="badge orange">Hoy</b></div>
+                  <a class="panel-link" href="#">Agregar acción</a>
+                </article>
+                <article class="panel">
+                  <div class="panel-title">Pipeline comercial</div>
+                  <h4>Etapas y montos</h4>
+                  <div class="pipeline-step"><strong>Leads</strong><span>$2.1M</span><div class="bar"><i style="width:32%"></i></div></div>
+                  <div class="pipeline-step"><strong>Calificación</strong><span>$3.4M</span><div class="bar"><i style="width:48%"></i></div></div>
+                  <div class="pipeline-step"><strong>Propuesta</strong><span>$5.8M</span><div class="bar"><i style="width:72%"></i></div></div>
+                  <div class="pipeline-step"><strong>Negociación</strong><span>$3.2M</span><div class="bar"><i style="width:50%"></i></div></div>
+                  <div class="pipeline-step"><strong>Cierre</strong><span>$2.0M</span><div class="bar"><i style="width:28%"></i></div></div>
+                  <div class="pipeline-total"><span>Total pipeline</span><strong>$16.5M</strong></div>
+                </article>
+                <article class="panel">
+                  <div class="panel-title">Flujo operativo</div>
+                  <h4>Estados clave</h4>
+                  <div class="row"><strong>Solicitudes comerciales</strong><b class="badge amber">6 abiertas</b></div>
+                  <div class="row"><strong>Cotizaciones operaciones</strong><b class="badge orange">4 en curso</b></div>
+                  <div class="row"><strong>Proyectos activos</strong><b class="badge green">8 en curso</b></div>
+                  <div class="row"><strong>Facturación pendiente</strong><b class="badge blue">3 pendientes</b></div>
+                  <a class="panel-link" href="#">Ir a tablero operativo</a>
+                </article>
+              </div>
+
+              <div class="activity-bar">
+                <div>
+                  <span>Próximas actividades</span>
+                  <strong>Reunión seguimiento proyecto Andes · Hoy 11:00</strong>
+                </div>
+                <a href="#">Ver calendario</a>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

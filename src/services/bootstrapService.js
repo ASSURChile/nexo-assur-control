@@ -9,8 +9,11 @@ import { DEMO_AUTH_ENABLED } from "./authService.js";
 const todayISO=()=>new Date().toISOString().slice(0,10);
 
 const DEFAULT_USERS = [
-  {nombre:"Administrador",email:"admin@assur.cl",password:"admin123",rol:"admin"},
-  {nombre:"Jefe Comercial",email:"comercial@assur.cl",password:"com123",rol:"jefe_comercial",area:"Comercial",cargo:"Jefe Comercial"},
+  {nombre:"Gerente General",email:"gerente@assur.cl",password:"ger123",rol:"gerente_general",area:"Gerencia",cargo:"Gerente General"},
+  {nombre:"Gerente Operaciones y Administración",email:"gerops@assur.cl",password:"gerops123",rol:"gerente_operaciones_admin",area:"Gerencia",cargo:"Gerente Operaciones y Administración"},
+  {nombre:"Administrador Sistema",email:"admin@assur.cl",password:"admin123",rol:"admin",area:"Sistema",cargo:"Administrador"},
+  {nombre:"Jefe Comercial",email:"jefecomercial@assur.cl",password:"jefe123",rol:"jefe_comercial",area:"Comercial",cargo:"Jefe Comercial"},
+  {nombre:"Vendedor Demo",email:"vendedor@assur.cl",password:"vend123",rol:"comercial",area:"Comercial",cargo:"Ejecutivo comercial"},
   {nombre:"Jefe Operaciones",email:"oper@assur.cl",password:"oper123",rol:"operaciones"},
   {nombre:"Administrativo Operaciones",email:"adminops@assur.cl",password:"ops123",rol:"administrativo_operaciones",area:"Operaciones",cargo:"Administrativo de operaciones"},
   {nombre:"Finanzas",email:"finanzas@assur.cl",password:"fin123",rol:"finanzas",area:"Finanzas",cargo:"Administración y finanzas"},

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ff } from "../config/appConstants";
-import { Bdg, Btn, Card, EmptyState, Fld, G, Inp, Modal, Sel, SelBusca, STitle } from "../components/ui";
+import { Bdg, Btn, Card, EmptyState, Fld, G, Inp, Modal, ModuleHero, QuickActions, Sel, SelBusca, STitle, WorkflowSteps } from "../components/ui";
 import { fmtCLP } from "../utils/formatters";
 
 const LINEAS=["ASSUR Home","ASSUR Empresas"];
@@ -99,17 +99,25 @@ export default function PaquetesComercialesView({C,paquetes,materiales,clientes,
     onCreateQuickQuote?.({paquete:selected,clienteId:quote.clienteId,instalacionId:quote.instalacionId});
   };
   return <div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:14,marginBottom:16,flexWrap:"wrap"}}>
-      <div>
-        <div style={{fontSize:12,color:C.blue,textTransform:"uppercase",letterSpacing:"0.14em",fontWeight:900,fontFamily:ff,marginBottom:6}}>{mode==="quick"?"Venta paquetizada":"Catálogo operacional"}</div>
-        <h2 style={{margin:0,color:C.text,fontFamily:ff,fontSize:24,lineHeight:1.15}}>{mode==="quick"?"Cotización rápida por paquete":"Paquetes comerciales"}</h2>
-        <div style={{fontSize:13,color:C.textM,fontFamily:ff,marginTop:6,maxWidth:760}}>Paquetes aprobados para ventas de volumen, con precio, materiales y servicio recurrente precargados.</div>
-      </div>
-      {!readonly&&mode!=="quick"&&<Btn C={C} onClick={()=>setModal(newPackage())}>+ Nuevo paquete</Btn>}
-    </div>
+    <ModuleHero
+      C={C}
+      eyebrow={mode==="quick"?"Venta paquetizada":"Catálogo operacional"}
+      title={mode==="quick"?"Cotización rápida por paquete":"Paquetes comerciales"}
+      subtitle={mode==="quick"?"Elige cliente, instalación y paquete activo. El vendedor usa una oferta aprobada sin entrar al costeo interno.":"Paquetes aprobados para ventas de volumen, con precio, materiales y servicio recurrente precargados."}
+      actions={!readonly&&mode!=="quick"&&<Btn C={C} onClick={()=>setModal(newPackage())}>Nuevo paquete</Btn>}
+    >
+      {mode==="quick"
+        ?<WorkflowSteps C={C} active={selected?2:quote.clienteId?1:0} steps={["Cliente","Paquete activo","Cotización lista"]}/>
+        :<QuickActions C={C} items={[
+          {label:`${activos.length} activos`,description:"Disponibles para comercial",tone:activos.length?C.green:C.amber},
+          {label:`${paquetes.filter(p=>p.requiereAprobacion).length} con aprobación`,description:"Revisar margen o excepciones",tone:C.amber},
+          {label:"Costos internos",description:"Solo operaciones/gerencia",tone:C.orange||C.blue},
+        ]}/>}
+    </ModuleHero>
 
     {mode==="quick"&&<Card C={C} style={{marginBottom:16}}>
       <STitle C={C}>Generar cotización rápida</STitle>
+      <div style={{fontSize:12,color:C.textM,fontFamily:ff,lineHeight:1.45,marginBottom:12}}>Este flujo es para ventas por volumen: no edita materiales ni costos, solo usa paquetes aprobados.</div>
       <G cols={3}>
         <Fld C={C} label="Cliente"><SelBusca C={C} value={quote.clienteId} onChange={v=>setQuote(q=>({...q,clienteId:v,instalacionId:""}))} opts={[{value:"",label:"— Seleccionar —"},...clientes.map(c=>({value:c.id,label:c.razonSocial||c.nombreComercial||"Cliente"}))]}/></Fld>
         <Fld C={C} label="Instalación"><Sel C={C} value={quote.instalacionId} onChange={v=>setQuote(q=>({...q,instalacionId:v}))} opts={[{value:"",label:"— Sin instalación —"},...instCli.map(i=>({value:i.id,label:i.nombre||i.direccion||"Instalación"}))]}/></Fld>
@@ -162,11 +170,21 @@ export function SolicitudesCotizacionView({C,oportunidades,clientes,instalacione
   const solicitudes=oportunidades.filter(o=>o.requiereCotizacion||["Solicitud de cotización","En cotización","Propuesta lista"].includes(o.etapa));
   const update=(opo,patch)=>onSaveOportunidad({...opo,...patch,updatedAt:new Date().toISOString(),historial:[...(opo.historial||[]),{fecha:new Date().toISOString(),accion:patch.etapa?`Etapa: ${patch.etapa}`:"Solicitud actualizada"}]});
   return <div>
-    <div style={{marginBottom:16}}>
-      <div style={{fontSize:12,color:C.blue,textTransform:"uppercase",letterSpacing:"0.14em",fontWeight:900,fontFamily:ff,marginBottom:6}}>Operación comercial</div>
-      <h2 style={{margin:0,color:C.text,fontFamily:ff,fontSize:24}}>Solicitudes de cotización</h2>
-      <div style={{fontSize:13,color:C.textM,fontFamily:ff,marginTop:6}}>Bandeja puente entre Comercial y Operaciones para cotizaciones especiales.</div>
-    </div>
+    <ModuleHero
+      C={C}
+      eyebrow="Operación comercial"
+      title="Pedir cotización"
+      subtitle="Bandeja puente entre Comercial y Operaciones. Comercial envía la necesidad; operaciones toma, costea y prepara la propuesta."
+    >
+      <WorkflowSteps C={C} active={1} steps={["Contacto","Solicitud","Costeo operaciones","Propuesta cliente"]}/>
+      <div style={{marginTop:12}}>
+        <QuickActions C={C} items={[
+          {label:`${solicitudes.filter(o=>!o.etapa||o.etapa==="Solicitud de cotización").length} nuevas`,description:"Requieren toma de operaciones",tone:C.amber},
+          {label:`${solicitudes.filter(o=>o.etapa==="En cotización").length} en preparación`,description:"Costeo en curso",tone:C.orange||C.blue},
+          {label:`${solicitudes.filter(o=>o.etapa==="Propuesta lista").length} listas`,description:"Comercial puede hacer seguimiento",tone:C.green},
+        ]}/>
+      </div>
+    </ModuleHero>
     {solicitudes.length===0?<EmptyState C={C} icon="□" title="Sin solicitudes" sub="Cuando Comercial marque una oportunidad como solicitud de cotización aparecerá aquí."/>:<div style={{display:"grid",gap:10}}>
       {solicitudes.map(o=>{
         const cl=clientes.find(c=>c.id===o.clienteId);
@@ -178,9 +196,14 @@ export function SolicitudesCotizacionView({C,oportunidades,clientes,instalacione
               <div style={{fontSize:15,fontWeight:900,color:C.text,fontFamily:ff}}>{o.titulo||cl?.razonSocial||"Solicitud sin título"}</div>
               <div style={{fontSize:12,color:C.textM,fontFamily:ff,marginTop:4}}>{cl?.razonSocial||"Sin cliente"}{inst?` · ${inst.nombre||inst.direccion}`:""} · {o.ejecutivo||"Sin ejecutivo"}</div>
             </div>
-            <Bdg color={o.etapa==="Propuesta lista"?C.green:o.etapa==="En cotización"?C.amber:C.blue} small>{o.etapa||"Solicitud"}</Bdg>
+            <Bdg color={o.etapa==="Propuesta lista"?C.green:o.etapa==="En cotización"?C.amber:C.blue} small style={{maxWidth:132,overflow:"hidden",textOverflow:"ellipsis"}}>{o.etapa||"Solicitud"}</Bdg>
           </div>
           <div style={{fontSize:12,color:C.textS,fontFamily:ff,lineHeight:1.45,marginTop:10}}>{o.notas||"Sin notas de levantamiento."}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:8,marginTop:12}}>
+            <Mini C={C} label="Prioridad" value={o.prioridad||"Normal"} color={o.prioridad==="Alta"||o.prioridad==="Crítica"?C.red:C.amber}/>
+            <Mini C={C} label="Presupuesto" value={o.valorEstimado?fmtCLP(o.valorEstimado):"No informado"} color={C.green}/>
+            <Mini C={C} label="Próxima acción" value={o.proximaAccion||"Tomar solicitud"} color={C.orange||C.blue}/>
+          </div>
           <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:12,flexWrap:"wrap"}}>
             {!readonly&&<Btn C={C} ghost small onClick={()=>update(o,{requiereCotizacion:true,etapa:"En cotización"})}>Tomar cotización</Btn>}
             {!readonly&&<Btn C={C} ghost small color={C.green} onClick={()=>onCrearPropuesta(o)}>Crear propuesta</Btn>}

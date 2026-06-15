@@ -82,6 +82,18 @@ async function deleteIds(token, table, ids) {
   return rows.length;
 }
 
+async function deleteStorageObjects(token, bucket, paths) {
+  const unique = [...new Set(paths.filter(Boolean))];
+  if (!unique.length) return 0;
+  await request(`/storage/v1/object/${bucket}`, {
+    method: "DELETE",
+    token,
+    body: { prefixes: unique },
+    prefer: null,
+  });
+  return unique.length;
+}
+
 async function collect(token, table, filters) {
   const ids = [];
   for (const filter of filters) {
@@ -95,6 +107,9 @@ async function collect(token, table, filters) {
 }
 
 const token = await login();
+const companyId = "00000000-0000-0000-0000-000000000001";
+const hardeningStorageBucket = "project-evidence";
+const hardeningStoragePath = `${companyId}/qa-hardening/qa-hardening-check.txt`;
 
 const flowIds = {
   clients: ["qa-flujo-cliente"],
@@ -111,7 +126,59 @@ const flowIds = {
   service_billing_expectations: [],
 };
 
+const hardeningIds = {
+  attachments: ["qa-hardening-attachment"],
+  document_templates: ["qa-hardening-template"],
+  generated_documents: ["qa-hardening-document"],
+  document_versions: ["qa-hardening-document-v1"],
+  activity_events: ["qa-hardening-activity"],
+  error_logs: ["qa-hardening-error"],
+};
+
 const targets = {
+  document_versions: [
+    ...hardeningIds.document_versions,
+    ...await collect(token, "document_versions", [
+      "metadata->>qa=eq.true",
+      "id=like.qa-hardening-*",
+    ]),
+  ],
+  generated_documents: [
+    ...hardeningIds.generated_documents,
+    ...await collect(token, "generated_documents", [
+      "metadata->>qa=eq.true",
+      "id=like.qa-hardening-*",
+    ]),
+  ],
+  attachments: [
+    ...hardeningIds.attachments,
+    ...await collect(token, "attachments", [
+      "metadata->>qa=eq.true",
+      "id=like.qa-hardening-*",
+      `storage_path=eq.${hardeningStoragePath}`,
+    ]),
+  ],
+  document_templates: [
+    ...hardeningIds.document_templates,
+    ...await collect(token, "document_templates", [
+      "metadata->>qa=eq.true",
+      "id=like.qa-hardening-*",
+    ]),
+  ],
+  activity_events: [
+    ...hardeningIds.activity_events,
+    ...await collect(token, "activity_events", [
+      "metadata->>qa=eq.true",
+      "id=like.qa-hardening-*",
+    ]),
+  ],
+  error_logs: [
+    ...hardeningIds.error_logs,
+    ...await collect(token, "error_logs", [
+      "metadata->>qa=eq.true",
+      "id=like.qa-hardening-*",
+    ]),
+  ],
   service_billing_expectations: [
     ...flowIds.service_billing_expectations,
     ...await collect(token, "service_billing_expectations", [
@@ -171,6 +238,12 @@ const targets = {
 };
 
 const deleteOrder = [
+  "document_versions",
+  "generated_documents",
+  "attachments",
+  "document_templates",
+  "activity_events",
+  "error_logs",
   "service_billing_expectations",
   "quick_quotes",
   "commercial_package_items",
@@ -193,9 +266,16 @@ const deleted = {};
 for (const table of deleteOrder) {
   deleted[table] = await deleteIds(token, table, targets[table] || []);
 }
+deleted.storage_objects = await deleteStorageObjects(token, hardeningStorageBucket, [hardeningStoragePath]);
 
 const remaining = {};
 for (const table of [
+  "attachments",
+  "document_templates",
+  "generated_documents",
+  "document_versions",
+  "activity_events",
+  "error_logs",
   "commercial_packages",
   "commercial_package_items",
   "commercial_package_services",

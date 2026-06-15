@@ -19,6 +19,14 @@ export function clearSession(){
   repo.session.set(null);
 }
 
+export async function logoutSupabaseUser(accessToken){
+  if(!accessToken||!SUPABASE_URL||!SUPABASE_ANON_KEY)return;
+  await supabaseRequest("/auth/v1/logout",{
+    method:"POST",
+    accessToken,
+  });
+}
+
 export function loginDemoUser({email,password}){
   if(!DEMO_AUTH_ENABLED)return null;
   const normalized=(email||"").trim().toLowerCase();

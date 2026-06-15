@@ -19,7 +19,7 @@ function readEnv() {
   return env;
 }
 
-const env = readEnv();
+const env = { ...readEnv(), ...process.env };
 const base = String(env.VITE_SUPABASE_URL || "").replace(/\/+$/, "");
 const anonKey = env.VITE_SUPABASE_ANON_KEY;
 

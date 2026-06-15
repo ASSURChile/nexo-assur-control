@@ -1,0 +1,208 @@
+{
+  "clientes": [
+    {
+      "empresa": "Alerta MD Ltda.",
+      "rutEmpresa": "76.000.000-1",
+      "codigo": "CLI-AL-001",
+      "rut": "76.111.222-3",
+      "razonSocial": "QA CLOUD Monitoreo Demo SpA",
+      "nombreFantasia": "QA Monitoreo",
+      "direccion": "Curico",
+      "estado": "Activo"
+    },
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "codigo": "CLI-SE-001",
+      "rut": "76.333.444-5",
+      "razonSocial": "QA CLOUD Proyecto Tecnico SpA",
+      "nombreFantasia": "QA Tecnico",
+      "direccion": "Molina",
+      "estado": "Activo"
+    }
+  ],
+  "facturas": [
+    {
+      "empresa": "Alerta MD Ltda.",
+      "rutEmpresa": "76.000.000-1",
+      "lineaNegocio": "Monitoreo",
+      "folio": "AL-1001",
+      "rutCliente": "76.111.222-3",
+      "fechaEmision": "2026-05-01",
+      "fechaVencimiento": "2026-05-31",
+      "montoTotal": 950000,
+      "montoPagado": 0,
+      "estado": "Emitida",
+      "centroCosto": "4-03-001"
+    },
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "lineaNegocio": "Proyecto tecnico",
+      "folio": "SE-2001",
+      "rutCliente": "76.333.444-5",
+      "fechaEmision": "2026-05-05",
+      "fechaVencimiento": "2026-06-04",
+      "montoTotal": 8500000,
+      "montoPagado": 3500000,
+      "estado": "Parcial",
+      "centroCosto": "PRY-MOLINA"
+    }
+  ],
+  "pagos": [
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "folioFactura": "SE-2001",
+      "fechaPago": "2026-05-15",
+      "monto": 3500000,
+      "medio": "Transferencia"
+    }
+  ],
+  "cxp": [
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "folio": "OC-7788",
+      "proveedor": "Proveedor Camaras QA",
+      "rutProveedor": "77.111.222-3",
+      "fechaEmision": "2026-05-03",
+      "fechaVencimiento": "2026-06-03",
+      "montoTotal": 4200000,
+      "saldo": 4200000,
+      "estado": "Pendiente",
+      "centroCosto": "PRY-MOLINA"
+    }
+  ],
+  "centrosCosto": [
+    {
+      "empresa": "Alerta MD Ltda.",
+      "codigo": "4-03-001",
+      "nombre": "Monitoreo"
+    },
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "codigo": "PRY-MOLINA",
+      "nombre": "Proyecto Molina"
+    }
+  ],
+  "resultadoOperacional": [
+    {
+      "empresa": "Alerta MD Ltda.",
+      "lineaNegocio": "Monitoreo",
+      "anio": 2026,
+      "mes": 5,
+      "centroCosto": "4-03-001",
+      "cuentaContable": "410101",
+      "tipoResultado": "ingreso",
+      "monto": 950000
+    },
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "lineaNegocio": "Proyecto tecnico",
+      "anio": 2026,
+      "mes": 5,
+      "centroCosto": "PRY-MOLINA",
+      "cuentaContable": "510101",
+      "tipoResultado": "costo_operacion",
+      "monto": -4200000
+    }
+  ],
+  "costosGastos": [
+    {
+      "empresa": "Alerta MD Ltda.",
+      "rutEmpresa": "76.000.000-1",
+      "lineaNegocio": "Monitoreo",
+      "anio": 2026,
+      "mes": 5,
+      "centroCosto": "4-03-001",
+      "cuentaContable": "520101",
+      "nombreCuenta": "Gasto administracion monitoreo",
+      "tipoGasto": "gasto_administracion",
+      "monto": -3565552
+    },
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "lineaNegocio": "Proyecto tecnico",
+      "anio": 2026,
+      "mes": 5,
+      "centroCosto": "PRY-MOLINA",
+      "cuentaContable": "510201",
+      "nombreCuenta": "Costo operacional tecnico",
+      "tipoGasto": "costo_operacion",
+      "monto": -4200000
+    }
+  ],
+  "costosPersonal": [
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "lineaNegocio": "Proyecto tecnico",
+      "anio": 2026,
+      "mes": 5,
+      "area": "Operaciones",
+      "rolCargo": "tecnico",
+      "centroCosto": "OP-TEC",
+      "costoEmpresa": 3420000,
+      "horasBaseMes": 360,
+      "tecnicosActivos": 2
+    },
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "lineaNegocio": "Proyecto tecnico",
+      "anio": 2026,
+      "mes": 5,
+      "area": "Operaciones",
+      "rolCargo": "supervisor",
+      "centroCosto": "OP-TEC",
+      "costoEmpresa": 1900000,
+      "horasBaseMes": 180,
+      "tecnicosActivos": 1
+    }
+  ],
+  "materiales": [
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "lineaNegocio": "Proyecto tecnico",
+      "codigo": "CAM-IP-4MP",
+      "nombre": "Camara IP 4MP exterior",
+      "categoria": "CCTV",
+      "unidad": "un",
+      "costoUnitario": 125000,
+      "stockActual": 18,
+      "bodega": "Principal",
+      "fechaActualizacion": "2026-05-25"
+    }
+  ],
+  "stockMateriales": [
+    {
+      "empresa": "Servicios Electronicos Ltda.",
+      "rutEmpresa": "76.000.000-2",
+      "lineaNegocio": "Proyecto tecnico",
+      "codigo": "PANEL-ALM-01",
+      "nombre": "Panel alarma IP",
+      "categoria": "Alarmas",
+      "unidad": "un",
+      "costoUnitario": 89000,
+      "stockActual": 7,
+      "bodega": "Principal",
+      "fechaActualizacion": "2026-05-25"
+    }
+  ],
+  "serviciosRecurrentes": [
+    {
+      "empresa": "Alerta MD Ltda.",
+      "codigo": "SRV-AL-001",
+      "rutCliente": "76.111.222-3",
+      "tipoServicio": "Monitoreo de alarmas",
+      "valorMensual": 950000,
+      "alarmas": 1,
+      "camaras": 0,
+      "estado": "Activo",
+      "fechaInicio": "2026-05-01"
+    }
+  ]
+}
