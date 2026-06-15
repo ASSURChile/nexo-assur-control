@@ -16,6 +16,12 @@ La cuenta corporativa definida para continuidad técnica es:
 integracion@mdsg.cl
 ```
 
+La pauta operativa exacta para completar invitaciones en consola está en:
+
+```txt
+docs/access-transfer-console-steps.md
+```
+
 ## Hallazgos De Acceso
 
 ### Cloudflare
