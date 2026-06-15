@@ -58,13 +58,20 @@ Acción requerida:
 
 ### Git / Repositorio
 
-Desde este workspace no hay remoto Git configurado.
+El repositorio corporativo ya está configurado y publicado.
+
+```txt
+Repositorio: https://github.com/ASSURChile/nexo-assur-control
+Remoto local: git@github.com:ASSURChile/nexo-assur-control.git
+Rama: main
+Commit handoff: 0fdf52f Preparar release productivo y handoff tecnico
+```
 
 Acción requerida:
 
 ```txt
-[ ] Crear repositorio privado en GitHub bajo cuenta/organización corporativa.
-[ ] Subir el proyecto desde este workspace.
+[x] Crear repositorio privado en GitHub bajo cuenta/organización corporativa.
+[x] Subir el proyecto desde este workspace.
 [ ] Invitar al informático con su correo propio.
 [ ] Mantener a Moisés como respaldo temporal.
 ```
@@ -120,8 +127,8 @@ Primero:
 ## Checklist Para Cerrar Handoff
 
 ```txt
-[ ] Repositorio corporativo creado.
-[ ] Proyecto subido sin .env.local, tmp, backups ni dist.
+[x] Repositorio corporativo creado.
+[x] Proyecto subido sin .env.local, tmp, backups ni dist.
 [ ] Cloudflare accesible por integracion@mdsg.cl.
 [ ] Supabase accesible por integracion@mdsg.cl.
 [ ] Informático invitado con correo propio.
